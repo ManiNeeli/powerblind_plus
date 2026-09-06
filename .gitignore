@@ -1,0 +1,63 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Environment secrets — NEVER commit these
+.env
+.env.local
+.env.*.local
+apps/api/.env
+apps/web/.env
+packages/db/.env
+
+# Database & Archive files
+*.db
+*.db-shm
+*.db-wal
+packages/db/prisma/*.db*
+*.zip
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+services/ml/__pycache__/
+services/ml/.venv/
+
+# ML model artifacts (can be large; store in object storage in production)
+services/ml/models/*.pkl
+services/ml/models/*.joblib
+services/ml/models/*.json
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Vite
+*.local

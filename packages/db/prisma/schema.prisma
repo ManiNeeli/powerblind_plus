@@ -1,0 +1,159 @@
+// PowerBlind+ Prisma schema
+// Dev datasource is SQLite for zero-setup local dev. To move to Postgres later:
+// change `provider = "sqlite"` -> `provider = "postgresql"` and point DATABASE_URL
+// at a Postgres connection string. No model code changes required.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Auth / RBAC
+// ---------------------------------------------------------------------------
+
+// Role: OPERATOR | ADMIN (enforced by application layer / Zod schemas; String for SQLite compatibility)
+model User {
+  id               String   @id @default(cuid())
+  email            String   @unique
+  passwordHash     String
+  role             String   @default("OPERATOR")
+  failedLoginCount Int      @default(0)
+  lockedUntil      DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  inspections      Inspection[]
+  auditLogs        AuditLog[]
+
+  @@index([role])
+}
+
+// ---------------------------------------------------------------------------
+// Domain
+// ---------------------------------------------------------------------------
+
+model Consumer {
+  id                  String    @id // consumer_id, e.g. C00001
+  consumerType        String    // residential_small | residential_large | small_commercial | industrial_light
+  baseKwh             Float?    // base_kwh from consumer_labels.csv
+
+  // Ground truth (from the generated dataset, kept distinct from model Predictions)
+  groundTruthLabel    String?   // Normal | Theft | FaultyMeter | CommFailure
+  groundTruthSubtype  String?
+  anomalyStartDay     Int?      // integer day-index (1-365) from consumer_labels.csv
+  anomalyEndDay       Int?
+  anomalyStartDate    DateTime?
+  anomalyEndDate      DateTime?
+
+  readings            Reading[]
+  predictions         Prediction[]
+  inspections         Inspection[]
+
+  createdAt           DateTime  @default(now())
+
+  @@index([groundTruthLabel])
+  @@index([consumerType])
+}
+
+model Reading {
+  id             Int       @id @default(autoincrement())
+  consumerId     String
+  consumer       Consumer  @relation(fields: [consumerId], references: [id])
+
+  date           DateTime
+  kwh            Float?    // nullable: NaN/empty during CommFailure data-loss windows
+  voltageV       Float?
+  currentA       Float?
+  powerFactor    Float?
+  commFlag       Boolean   @default(false)
+
+  // Per-row ground truth (dataset provides label/subtype per reading-day too)
+  label          String?
+  anomalySubtype String?
+
+  @@unique([consumerId, date])
+  @@index([consumerId, date])
+  @@index([date])
+}
+
+// ---------------------------------------------------------------------------
+// ML predictions (model output + explanation, cached)
+// ---------------------------------------------------------------------------
+
+model Prediction {
+  id               String   @id @default(cuid())
+  consumerId       String
+  consumer         Consumer @relation(fields: [consumerId], references: [id])
+
+  predictedLabel   String
+  predictedSubtype String?
+  confidence       Float
+
+  topFeatures      String   // JSON-encoded [{feature, impact, direction}] (String for sqlite portability)
+  recommendation   String
+
+  modelVersion     String
+  source           String   @default("mock") // "mock" | "xgboost-v1" etc.
+
+  createdAt        DateTime @default(now())
+
+  @@index([consumerId, createdAt])
+  @@index([predictedLabel])
+}
+
+// ---------------------------------------------------------------------------
+// Decision support loop
+// ---------------------------------------------------------------------------
+
+// InspectionStatus: QUEUED | CONFIRMED | FALSE_POSITIVE (enforced by application layer / Zod; String for SQLite)
+model Inspection {
+  id          String            @id @default(cuid())
+  consumerId  String
+  consumer    Consumer          @relation(fields: [consumerId], references: [id])
+  operatorId  String
+  operator    User              @relation(fields: [operatorId], references: [id])
+
+  status      String            @default("QUEUED")
+  notes       String?
+
+  createdAt   DateTime          @default(now())
+
+  @@index([consumerId, createdAt])
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// Audit log
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  actor     User?    @relation(fields: [actorId], references: [id])
+  action    String   // e.g. "LOGIN_SUCCESS", "LOGIN_FAILED", "USER_CREATED", "INSPECTION_LOGGED"
+  metadata  String?  // JSON-encoded extra context
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([actorId, createdAt])
+  @@index([action])
+}
+
+// ---------------------------------------------------------------------------
+// Model health / versioning (for Admin Model Health panel + retrain action)
+// ---------------------------------------------------------------------------
+
+model ModelVersion {
+  id              String   @id @default(cuid())
+  version         String   @unique
+  trainedAt       DateTime @default(now())
+  metricsJson     String   // JSON-encoded {precision, recall, f1 per class, confusion_matrix}
+  isActive        Boolean  @default(false)
+
+  @@index([isActive])
+}

@@ -1,0 +1,24 @@
+{
+  "name": "powerblind-plus",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/web",
+    "apps/api",
+    "packages/db"
+  ],
+  "scripts": {
+    "build": "npm run build -w apps/web",
+    "build:web": "npm run build -w apps/web",
+    "test": "npm test -w apps/api",
+    "test:api": "npm test -w apps/api",
+    "test:web": "npm test -w apps/web",
+    "dev:web": "npm run dev -w apps/web",
+    "dev:api": "npm run dev -w apps/api",
+    "db:generate": "npm run generate -w packages/db",
+    "db:migrate": "npm run migrate -w packages/db",
+    "db:seed": "npm run seed -w packages/db",
+    "db:reset": "npm run reset -w packages/db"
+  },
+  "devDependencies": {}
+}

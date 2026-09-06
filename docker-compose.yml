@@ -1,0 +1,136 @@
+version: "3.9"
+
+# ── PowerBlind+ docker-compose ────────────────────────────────────────────────
+#
+# Services:
+#   web  — React SPA (nginx, port 80)
+#   api  — Express REST API (port 4000, internal only behind nginx)
+#   ml   — FastAPI ML microservice (port 8000, internal only)
+#
+# Volumes:
+#   db-data  — SQLite database file (survives container restarts)
+#   ml-models — Trained model artefacts
+#
+# Usage:
+#   Development (builds + starts everything):
+#     docker compose up --build
+#
+#   Production (uses pre-built images):
+#     docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+#   Seed the database (first run):
+#     docker compose exec api node apps/api/src/index.js  # starts normally
+#     docker compose exec api sh -c "cd packages/db && npm run seed"
+
+services:
+
+  # ── Web (React + nginx) ─────────────────────────────────────────────────────
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        VITE_API_URL: ""          # empty = relative URLs (nginx proxies /api)
+    ports:
+      - "80:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - frontend
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/health.txt"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ── API (Express) ───────────────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    env_file:
+      - apps/api/.env
+    environment:
+      NODE_ENV:        production
+      PORT:            4000
+      DATABASE_URL:    file:/data/powerblind.db
+      ML_SERVICE_URL:  http://ml:8000
+      CORS_ORIGINS:    http://localhost,http://web
+    volumes:
+      - db-data:/data
+    expose:
+      - "4000"
+    depends_on:
+      ml:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - frontend
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4000/api/health"]
+      interval: 30s
+      timeout: 8s
+      retries: 3
+      start_period: 15s
+
+  # ── ML microservice (FastAPI) ───────────────────────────────────────────────
+  ml:
+    build:
+      context: .
+      dockerfile: services/ml/Dockerfile
+    volumes:
+      - ml-models:/app/models
+      # Mount dataset for retraining (read-only)
+      - ./data:/app/../../data:ro
+    expose:
+      - "8000"
+    restart: unless-stopped
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ── DB migration + seed (one-shot container) ────────────────────────────────
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    command: >
+      sh -c "
+        npx --prefix packages/db prisma migrate deploy &&
+        node packages/db/seed/seed.js
+      "
+    env_file:
+      - apps/api/.env
+    environment:
+      NODE_ENV:     production
+      DATABASE_URL: file:/data/powerblind.db
+    volumes:
+      - db-data:/data
+    depends_on:
+      - ml
+    profiles:
+      - migrate        # only runs with: docker compose --profile migrate up migrate
+    networks:
+      - backend
+
+volumes:
+  db-data:
+    driver: local
+  ml-models:
+    driver: local
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
+    internal: true    # ML + API can't be reached from outside

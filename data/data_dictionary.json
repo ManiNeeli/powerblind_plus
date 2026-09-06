@@ -1,0 +1,48 @@
+{
+  "files": {
+    "powerblind_smartmeter_readings.csv": "Main time-series dataset, one row per consumer-day",
+    "powerblind_consumer_labels.csv": "Consumer-level metadata: ground-truth label, subtype, anomaly window"
+  },
+  "columns": {
+    "consumer_id": "Unique consumer identifier (C00001-C05000)",
+    "date": "Reading date (YYYY-MM-DD), daily granularity, 365 days (2023)",
+    "consumer_type": "Archetype: residential_small, residential_large, small_commercial, industrial_light",
+    "kwh": "Daily energy consumption in kWh (NaN during communication failure gaps)",
+    "voltage_v": "Average daily voltage reading (Volts)",
+    "current_a": "Average daily current draw (Amps), derived from power/voltage/PF",
+    "power_factor": "Average daily power factor (0-1)",
+    "comm_flag": "True if this day was affected by a communication failure event",
+    "label": "Ground truth class: Normal, Theft, FaultyMeter, CommFailure",
+    "anomaly_subtype": "Specific sub-type of anomaly (see taxonomy below), 'None' if Normal"
+  },
+  "class_distribution_target": {
+    "Normal": 0.8,
+    "Theft": 0.1,
+    "FaultyMeter": 0.06,
+    "CommFailure": 0.04
+  },
+  "theft_subtypes": {
+    "T1_PartialReduction": "Constant gamma-factor reduction of true consumption (classic tampering)",
+    "T2_ZeroConsumption": "Meter reports near-zero while consumer continues to use electricity (bypass)",
+    "T3_RandomReduction": "Time-varying random reduction factor applied per day",
+    "T4_ByPassMeter": "Flatlined low reporting regardless of actual usage pattern",
+    "T5_ReverseTamper": "Usage pattern reversed/smeared to obscure peak load timing"
+  },
+  "faulty_meter_subtypes": {
+    "F1_StuckAt": "Meter reports same frozen value for an extended period",
+    "F2_Drift": "Gradual linear drift away from true consumption (calibration decay)",
+    "F3_NoiseSpike": "Random large-magnitude spikes due to sensor malfunction",
+    "F4_UnderRegister": "Consistent fixed-percentage under-reporting due to miscalibration"
+  },
+  "comm_failure_subtypes": {
+    "C1_MissingData": "Reading is NaN (no transmission received)",
+    "C2_DuplicateTransmission": "Stale/repeated previous day's value resent",
+    "C3_ClockSkew": "Timestamp misalignment causing reading/date mismatch"
+  },
+  "notes": [
+    "Base normal consumption patterns are calibrated using real-world statistical parameters (seasonal amplitude, weekly residential/commercial cycles, base load ranges) consistent with structures reported in Irish CER and SGCC literature.",
+    "Anomalies are injected synthetically using formulas adapted from published electricity theft detection literature (e.g. Jokar et al. 2016 attack taxonomy; SGCC Wide & Deep CNN paper).",
+    "Random seed fixed at 42 for reproducibility.",
+    "Designed for multi-class classification (Normal / Theft / FaultyMeter / CommFailure) plus theft/fault/comm sub-type classification for explainability (XAI) modeling."
+  ]
+}

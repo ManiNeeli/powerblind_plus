@@ -1,0 +1,34 @@
+version: "3.9"
+
+# Development overrides — hot reload, source mounts, exposed ports.
+# Use with:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  web:
+    build:
+      target: build       # stop at build stage; don't need nginx in dev
+    command: npm run dev --workspace=apps/web
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./apps/web/src:/app/apps/web/src:ro
+    environment:
+      VITE_API_URL: "http://localhost:4000"
+
+  api:
+    environment:
+      NODE_ENV: development
+    command: npm run dev --workspace=apps/api
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./apps/api/src:/app/apps/api/src:ro
+      - ./packages/db:/app/packages/db:ro
+
+  ml:
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./services/ml:/app:rw
