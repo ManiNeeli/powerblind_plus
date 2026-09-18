@@ -11,6 +11,7 @@ import XAIWaterfall    from '../components/charts/XAIWaterfall';
 import ConfidenceGauge from '../components/charts/ConfidenceGauge';
 import ClassProbBar    from '../components/charts/ClassProbBar';
 import PredictionHistory from '../components/charts/PredictionHistory';
+import TheftForensicFlow from '../components/charts/TheftForensicFlow';
 import { cn } from '../lib/utils';
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
@@ -153,8 +154,17 @@ export default function ConsumerDetailPage() {
           ))}
         </div>
 
+        {/* Theft & Anomaly Forensic Incident Reconstruction */}
+        {(consumer.groundTruthLabel === 'Theft' || consumer.anomalyStartDate || displayPred?.predictedLabel === 'Theft') && (
+          <TheftForensicFlow
+            consumer={consumer}
+            readings={readings}
+            prediction={displayPred}
+          />
+        )}
+
         {/* Timeseries chart */}
-        <Section title="Energy Consumption & Electrical Signature" icon={BarChart2}>
+        <Section title="Full-Year Energy Consumption & Electrical Signature" icon={BarChart2}>
           {loadingTS
             ? <Skeleton className="h-64 w-full" />
             : readings.length > 0 ? (

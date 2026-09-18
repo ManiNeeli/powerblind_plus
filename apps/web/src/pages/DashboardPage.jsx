@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, Gauge, Wifi, CheckCircle, Zap, Loader2, ArrowRight } from 'lucide-react';
+import { AlertTriangle, Gauge, Wifi, CheckCircle, Zap, Loader2, ArrowRight, ShieldAlert } from 'lucide-react';
 import { useDashboard }       from '../hooks/useDashboard';
 import { useBatchPredict }    from '../hooks/usePrediction';
 import { useToast }           from '../contexts/ToastContext';
@@ -182,13 +182,14 @@ export default function DashboardPage() {
                 <th scope="col">Consumer ID</th><th scope="col">Type</th>
                 <th scope="col">Class</th><th scope="col">Subtype</th>
                 <th scope="col">Confidence</th><th scope="col">Prediction</th><th scope="col">Status</th>
+                <th scope="col" className="text-right">Action</th>
               </tr>
             </thead>
             <tbody>
               {loading
-                ? <SkeletonRows cols={[40,80,60,80,40,60,60]} rows={8} />
+                ? <SkeletonRows cols={[40,80,60,80,40,60,60,80]} rows={8} />
                 : topRisk.length === 0
-                  ? <tr><td colSpan={7}><EmptyState title="No predictions yet" sub='Click "Batch Predict" to run predictions on flagged consumers.' /></td></tr>
+                  ? <tr><td colSpan={8}><EmptyState title="No predictions yet" sub='Click "Batch Predict" to run predictions on flagged consumers.' /></td></tr>
                   : topRisk.map(c => (
                       <tr key={c.id} onClick={() => navigate(`/consumers/${c.id}`)} tabIndex={0}
                         onKeyDown={e => e.key === 'Enter' && navigate(`/consumers/${c.id}`)}
@@ -200,6 +201,15 @@ export default function DashboardPage() {
                         <td className="font-mono text-xs font-semibold text-ink-primary">{c.latestConfidence != null ? `${(c.latestConfidence*100).toFixed(0)}%` : '—'}</td>
                         <td>{c.latestPredictedLabel ? <Badge label={c.latestPredictedLabel} /> : <span className="text-[10px] text-ink-muted">—</span>}</td>
                         <td><Badge label={c.inspectionStatus ?? 'Unreviewed'} /></td>
+                        <td className="text-right">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); navigate(`/consumers/${c.id}`); }}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-[#ff3b5c]/10 text-[#ff4d6d] border border-[#ff3b5c]/30 hover:bg-[#ff3b5c]/20 hover:shadow-glow-theft transition-all duration-150"
+                          >
+                            <ShieldAlert className="w-3 h-3" />
+                            <span>Forensic Flow →</span>
+                          </button>
+                        </td>
                       </tr>
                     ))
               }
