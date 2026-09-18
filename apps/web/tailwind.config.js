@@ -31,9 +31,14 @@ export default {
         'glow-theft':  '0 0 20px -3px rgba(255,59,92,0.35)',
         'glow-fault':  '0 0 20px -3px rgba(245,158,11,0.35)',
         'glow-comm':   '0 0 20px -3px rgba(99,102,241,0.35)',
+        'glow-normal': '0 0 20px -3px rgba(16,185,129,0.35)',
         'card':        '0 2px 10px -2px rgba(0,0,0,0.5), 0 1px 3px -1px rgba(0,0,0,0.3)',
         'card-hover':  '0 12px 28px -6px rgba(0,0,0,0.6), 0 0 1px 1px rgba(0,242,178,0.25)',
-        'glass':       '0 8px 32px 0 rgba(0,0,0,0.4)',
+        'glass':       '0 8px 32px 0 rgba(0,0,0,0.4), inset 0 1px 0 0 rgba(255,255,255,0.08)',
+        'specular':    'inset 0 1px 0 0 rgba(255,255,255,0.1)',
+      },
+      transitionTimingFunction: {
+        'spring': 'cubic-bezier(0.16, 1, 0.3, 1)',
       },
       borderRadius: {
         card: '0.75rem',
@@ -42,6 +47,7 @@ export default {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'shimmer':    'shimmer 2s infinite linear',
         'glow-pulse': 'glowPulse 2.5s ease-in-out infinite alternate',
+        'radar':      'radarRipple 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
       },
       keyframes: {
         shimmer: {
@@ -51,6 +57,11 @@ export default {
         glowPulse: {
           '0%':   { opacity: '0.4', transform: 'scale(0.98)' },
           '100%': { opacity: '0.85', transform: 'scale(1.02)' },
+        },
+        radarRipple: {
+          '0%':   { transform: 'scale(0.95)', opacity: '0.85' },
+          '70%':  { transform: 'scale(2.2)',  opacity: '0' },
+          '100%': { transform: 'scale(0.95)', opacity: '0' },
         },
       },
       screens: {
