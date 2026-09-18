@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, Gauge, Wifi, CheckCircle, Zap, Loader2 } from 'lucide-react';
+import { AlertTriangle, Gauge, Wifi, CheckCircle, Zap, Loader2, ArrowRight } from 'lucide-react';
 import { useDashboard }       from '../hooks/useDashboard';
 import { useBatchPredict }    from '../hooks/usePrediction';
 import { useToast }           from '../contexts/ToastContext';
@@ -12,14 +12,19 @@ import {
   Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
 
-const LABEL_COLOR = { Theft:'#ef4444', FaultyMeter:'#f59e0b', CommFailure:'#6366f1', Normal:'#22c55e' };
+const LABEL_COLOR = { Theft:'#ff3b5c', FaultyMeter:'#f59e0b', CommFailure:'#6366f1', Normal:'#10b981' };
 
 function ChartTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="card px-3 py-2 text-xs shadow-card-hover">
-      <p className="text-ink-secondary mb-1">{label}</p>
-      {payload.map(p => <p key={p.dataKey} style={{ color: p.color }} className="font-medium">{p.name}: {p.value}</p>)}
+    <div className="card-glass px-3.5 py-2.5 text-xs shadow-glass border border-white/10 rounded-lg">
+      <p className="text-ink-secondary mb-1.5 font-mono text-[11px]">{label}</p>
+      {payload.map(p => (
+        <div key={p.dataKey} className="flex items-center gap-2 justify-between min-w-[120px] mb-0.5">
+          <span style={{ color: p.color }} className="font-medium text-[11px]">{p.name}:</span>
+          <span className="font-mono font-bold text-ink-primary">{p.value}</span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -41,22 +46,22 @@ export default function DashboardPage() {
   };
 
   const stats = [
-    { icon: AlertTriangle, label:'Theft Detected',  value: counts?.Theft?.toLocaleString(),       colorClass:'text-red-400'   },
-    { icon: Gauge,         label:'Faulty Meters',   value: counts?.FaultyMeter?.toLocaleString(),  colorClass:'text-amber-400' },
-    { icon: Wifi,          label:'Comm Failures',   value: counts?.CommFailure?.toLocaleString(),  colorClass:'text-indigo-400'},
-    { icon: CheckCircle,   label:'Normal',          value: counts?.Normal?.toLocaleString(),       colorClass:'text-green-400' },
+    { icon: AlertTriangle, label:'Theft Detected',  value: counts?.Theft?.toLocaleString(),       colorClass:'text-[#ff3b5c]'  },
+    { icon: Gauge,         label:'Faulty Meters',   value: counts?.FaultyMeter?.toLocaleString(),  colorClass:'text-[#f59e0b]'  },
+    { icon: Wifi,          label:'Comm Failures',   value: counts?.CommFailure?.toLocaleString(),  colorClass:'text-[#6366f1]'  },
+    { icon: CheckCircle,   label:'Normal',          value: counts?.Normal?.toLocaleString(),       colorClass:'text-[#10b981]'  },
   ];
 
   return (
     <PageShell
       title="Grid Overview"
-      subtitle={totalConsumers ? `${totalConsumers.toLocaleString()} consumers monitored` : 'Smart meter anomaly detection'}
+      subtitle={totalConsumers ? `${totalConsumers.toLocaleString()} smart meters continuously monitored` : 'Real-Time Anomaly & Theft Detection'}
       actions={
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2.5 flex-wrap">
           <button onClick={handleBatchPredict} disabled={batching || loading}
             aria-label="Run batch predictions on top-risk consumers"
-            className="flex items-center gap-2 px-3 py-2 rounded-md bg-accent/10 text-accent border border-accent/30 text-sm hover:bg-accent/20 transition-colors disabled:opacity-60">
-            {batching ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />{progress}%</> : <><Zap className="w-3.5 h-3.5" />Batch Predict</>}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-accent/15 text-accent border border-accent/30 text-xs font-semibold hover:bg-accent/25 hover:border-accent/50 hover:shadow-glow-accent transition-all duration-150 disabled:opacity-50">
+            {batching ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Processing {progress}%</> : <><Zap className="w-3.5 h-3.5" />Batch Predict</>}
           </button>
           <ExportButton />
         </div>
@@ -64,53 +69,59 @@ export default function DashboardPage() {
     >
       <ErrorAlert message={error} className="mb-5" />
 
-      {/* Stat cards */}
+      {/* Bento Stat KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
         {stats.map(s => <StatCard key={s.label} {...s} loading={loading} />)}
       </div>
 
-      {/* Inspection stats */}
+      {/* Field Inspection Metrics */}
       {(inspectionStats || loading) && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mb-5">
           {[
             { label:'Total Inspections',   value: inspectionStats?.total,         color:'text-ink-primary' },
-            { label:'Confirmed Anomalies', value: inspectionStats?.confirmed,     color:'text-red-400'     },
-            { label:'False Positives',     value: inspectionStats?.falsePositive, color:'text-green-400'   },
-            { label:'Queued',              value: inspectionStats?.queued,        color:'text-indigo-400'  },
+            { label:'Confirmed Anomalies', value: inspectionStats?.confirmed,     color:'text-[#ff3b5c]'   },
+            { label:'False Positives',     value: inspectionStats?.falsePositive, color:'text-[#10b981]'   },
+            { label:'Queued for Review',   value: inspectionStats?.queued,        color:'text-[#6366f1]'   },
           ].map(({ label, value, color }) => (
-            <div key={label} className="card p-3">
+            <div key={label} className="card p-4 hover:border-surface-borderLight transition-all">
               <p className="stat-card-label">{label}</p>
-              {loading ? <div className="skeleton h-5 w-12 mt-1 rounded" />
-                : <p className={cn('text-lg font-bold font-mono', color)}>{value?.toLocaleString() ?? '—'}</p>}
+              {loading ? <div className="skeleton h-6 w-14 mt-1.5 rounded" />
+                : <p className={cn('text-xl font-extrabold font-mono tracking-tight mt-1', color)}>{value?.toLocaleString() ?? '—'}</p>}
             </div>
           ))}
         </div>
       )}
 
-      {/* Charts */}
+      {/* Charts Bento Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-5">
         <div className="card p-5 lg:col-span-2">
-          <h2 className="text-xs font-semibold text-ink-secondary uppercase tracking-wider mb-4">
-            Anomaly Detections — Last 30 Days
-          </h2>
-          {loading ? <div className="skeleton h-48 rounded" /> : trend.length ? (
-            <ResponsiveContainer width="100%" height={200}>
-              <AreaChart data={trend} margin={{ top:4, right:4, left:-20, bottom:0 }}>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xs font-bold text-ink-secondary uppercase tracking-wider">
+              Anomaly Detections — Last 30 Days
+            </h2>
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+              <span className="text-[10px] font-mono text-ink-muted">30D Window</span>
+            </div>
+          </div>
+          {loading ? <div className="skeleton h-52 rounded-lg" /> : trend.length ? (
+            <ResponsiveContainer width="100%" height={210}>
+              <AreaChart data={trend} margin={{ top:6, right:6, left:-20, bottom:0 }}>
                 <defs>
                   {['Theft','FaultyMeter','CommFailure'].map(k => (
                     <linearGradient key={k} id={`g-${k}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor={LABEL_COLOR[k]} stopOpacity={0.3} />
-                      <stop offset="95%" stopColor={LABEL_COLOR[k]} stopOpacity={0}   />
+                      <stop offset="5%"  stopColor={LABEL_COLOR[k]} stopOpacity={0.35} />
+                      <stop offset="95%" stopColor={LABEL_COLOR[k]} stopOpacity={0.0}  />
                     </linearGradient>
                   ))}
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-surface-border, #2a3650)" vertical={false} />
-                <XAxis dataKey="date" tick={{ fill:'var(--color-ink-secondary)', fontSize:10 }} tickLine={false} axisLine={false} tickFormatter={d => d?.slice(5)} />
-                <YAxis tick={{ fill:'var(--color-ink-secondary)', fontSize:10 }} tickLine={false} axisLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.05)" vertical={false} />
+                <XAxis dataKey="date" tick={{ fill:'var(--color-ink-muted)', fontSize:10 }} tickLine={false} axisLine={false} tickFormatter={d => d?.slice(5)} />
+                <YAxis tick={{ fill:'var(--color-ink-muted)', fontSize:10 }} tickLine={false} axisLine={false} />
                 <Tooltip content={<ChartTooltip />} />
-                <Legend wrapperStyle={{ fontSize:10 }} />
+                <Legend wrapperStyle={{ fontSize:11, paddingTop:8 }} />
                 {[['Theft','Theft'],['FaultyMeter','Faulty Meter'],['CommFailure','Comm Failure']].map(([k,n]) => (
-                  <Area key={k} type="monotone" dataKey={k} name={n} stroke={LABEL_COLOR[k]} fill={`url(#g-${k})`} strokeWidth={1.5} dot={false} />
+                  <Area key={k} type="monotone" dataKey={k} name={n} stroke={LABEL_COLOR[k]} fill={`url(#g-${k})`} strokeWidth={2} dot={false} />
                 ))}
               </AreaChart>
             </ResponsiveContainer>
@@ -119,33 +130,50 @@ export default function DashboardPage() {
           )}
         </div>
 
-        <div className="card p-5">
-          <h2 className="text-xs font-semibold text-ink-secondary uppercase tracking-wider mb-4">Class Distribution</h2>
-          {loading ? <div className="skeleton h-48 rounded" /> : counts ? (
-            Object.entries(counts).map(([label, count]) => {
-              const total = Object.values(counts).reduce((a,b) => a+b, 0);
-              const pct   = total ? ((count/total)*100).toFixed(1) : 0;
-              return (
-                <div key={label} className="mb-3 last:mb-0">
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-ink-secondary">{label}</span>
-                    <span className="font-mono font-medium text-ink-primary">{count.toLocaleString()} ({pct}%)</span>
-                  </div>
-                  <div className="h-1.5 bg-surface-border rounded-full overflow-hidden" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
-                    <div className="h-full rounded-full transition-all duration-700" style={{ width:`${pct}%`, backgroundColor: LABEL_COLOR[label] }} />
-                  </div>
-                </div>
-              );
-            })
-          ) : null}
+        <div className="card p-5 flex flex-col justify-between">
+          <div>
+            <h2 className="text-xs font-bold text-ink-secondary uppercase tracking-wider mb-4">Class Distribution</h2>
+            {loading ? <div className="skeleton h-52 rounded-lg" /> : counts ? (
+              <div className="space-y-4">
+                {Object.entries(counts).map(([label, count]) => {
+                  const total = Object.values(counts).reduce((a,b) => a+b, 0);
+                  const pct   = total ? ((count/total)*100).toFixed(1) : 0;
+                  return (
+                    <div key={label} className="group">
+                      <div className="flex justify-between text-xs mb-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: LABEL_COLOR[label] }} />
+                          <span className="text-ink-secondary font-medium">{label}</span>
+                        </div>
+                        <span className="font-mono font-semibold text-ink-primary">{count.toLocaleString()} <span className="text-ink-muted">({pct}%)</span></span>
+                      </div>
+                      <div className="h-2 bg-surface-border/60 rounded-full overflow-hidden p-[1px]" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+                        <div className="h-full rounded-full transition-all duration-700 shadow-sm" style={{ width:`${pct}%`, backgroundColor: LABEL_COLOR[label] }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
+          <div className="pt-3 border-t border-surface-border/60 mt-4 flex items-center justify-between text-[11px] text-ink-muted font-mono">
+            <span>Aggregated Dataset</span>
+            <span>{totalConsumers ? `${totalConsumers} units` : ''}</span>
+          </div>
         </div>
       </div>
 
       {/* Top risk table */}
       <section aria-label="Top risk consumers" className="card overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-surface-border">
-          <h2 className="text-xs font-semibold text-ink-secondary uppercase tracking-wider">Top Risk Consumers</h2>
-          <button onClick={() => navigate('/consumers?label=Theft')} className="text-xs text-accent hover:text-accent-dim transition-colors">View all →</button>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-surface-border/70 bg-surface/20">
+          <div>
+            <h2 className="text-xs font-bold text-ink-secondary uppercase tracking-wider">Top Risk Consumers</h2>
+            <p className="text-[11px] text-ink-muted mt-0.5">Meters flagged with high anomaly probabilities</p>
+          </div>
+          <button onClick={() => navigate('/consumers?label=Theft')} className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline transition-colors">
+            <span>View all</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
         </div>
         <div className="overflow-x-auto">
           <table className="data-table" aria-label="Top risk consumers table">
@@ -165,11 +193,11 @@ export default function DashboardPage() {
                       <tr key={c.id} onClick={() => navigate(`/consumers/${c.id}`)} tabIndex={0}
                         onKeyDown={e => e.key === 'Enter' && navigate(`/consumers/${c.id}`)}
                         role="row" aria-label={`Consumer ${c.id}, ${c.groundTruthLabel}`}>
-                        <td className="font-mono text-accent text-xs">{c.id}</td>
+                        <td className="font-mono text-accent text-xs font-semibold hover:underline">{c.id}</td>
                         <td className="text-xs text-ink-secondary">{c.consumerType}</td>
                         <td><Badge label={c.groundTruthLabel} /></td>
                         <td className="text-[10px] font-mono text-ink-muted">{c.groundTruthSubtype ?? '—'}</td>
-                        <td className="font-mono text-xs text-ink-primary">{c.latestConfidence != null ? `${(c.latestConfidence*100).toFixed(0)}%` : '—'}</td>
+                        <td className="font-mono text-xs font-semibold text-ink-primary">{c.latestConfidence != null ? `${(c.latestConfidence*100).toFixed(0)}%` : '—'}</td>
                         <td>{c.latestPredictedLabel ? <Badge label={c.latestPredictedLabel} /> : <span className="text-[10px] text-ink-muted">—</span>}</td>
                         <td><Badge label={c.inspectionStatus ?? 'Unreviewed'} /></td>
                       </tr>

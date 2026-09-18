@@ -33,19 +33,19 @@ export default function InspectionsPage() {
 
   return (
     <PageShell
-      title="Inspections"
-      subtitle={total ? `${total.toLocaleString()} decisions logged` : 'Operator decision history'}
+      title="Field Inspections"
+      subtitle={total ? `${total.toLocaleString()} operator audit logs recorded` : 'Operator decision & field verification history'}
       actions={<ExportButton />}
     >
       {/* Status filter */}
       <div className="flex gap-2 mb-5 flex-wrap" role="group" aria-label="Filter by inspection status">
-        {[{v:'',l:'All'}, ...Object.entries(STATUS_META).map(([v,m])=>({v,l:m.label}))].map(({v,l}) => (
+        {[{v:'',l:'All Decisions'}, ...Object.entries(STATUS_META).map(([v,m])=>({v,l:m.label}))].map(({v,l}) => (
           <button key={v} onClick={() => set('status', v)}
             aria-pressed={status === v}
-            className={cn('px-3 py-1.5 rounded text-xs font-medium border transition-colors',
-              status===v
-                ? 'bg-accent/15 text-accent border-accent/30'
-                : 'text-ink-secondary border-transparent hover:bg-surface hover:text-ink-primary')}>
+            className={cn('px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-150',
+              status === v
+                ? 'bg-accent/15 text-accent border-accent/40 shadow-glow-accent'
+                : 'text-ink-secondary border-surface-border/60 bg-surface/30 hover:bg-surface hover:text-ink-primary hover:border-surface-border')}>
             {l}
           </button>
         ))}
@@ -58,12 +58,12 @@ export default function InspectionsPage() {
           <table className="data-table" aria-label="Inspection decisions">
             <thead>
               <tr>
-                <th scope="col">Consumer</th>
+                <th scope="col">Consumer ID</th>
                 <th scope="col" className="hidden sm:table-cell">Type</th>
                 <th scope="col">Anomaly Class</th>
                 <th scope="col">Decision</th>
                 <th scope="col" className="hidden md:table-cell">Operator</th>
-                <th scope="col">Date</th>
+                <th scope="col">Logged Date</th>
               </tr>
             </thead>
             <tbody>
@@ -87,16 +87,16 @@ export default function InspectionsPage() {
                           onClick={() => navigate(`/consumers/${ins.consumerId}`)}
                           onKeyDown={e => e.key === 'Enter' && navigate(`/consumers/${ins.consumerId}`)}
                           tabIndex={0} role="row">
-                          <td className="font-mono text-accent text-xs">{ins.consumer?.id}</td>
+                          <td className="font-mono text-accent text-xs font-semibold hover:underline">{ins.consumer?.id}</td>
                           <td className="text-xs text-ink-secondary hidden sm:table-cell">{ins.consumer?.consumerType}</td>
                           <td><Badge label={ins.consumer?.groundTruthLabel} /></td>
                           <td>
-                            <span className={cn('badge', sm.cls)}>
-                              <SI className="w-2.5 h-2.5" aria-hidden />
-                              <span className="hidden xs:inline">{sm.label}</span>
+                            <span className={cn('badge inline-flex items-center gap-1.5', sm.cls)}>
+                              <SI className="w-3 h-3" aria-hidden />
+                              <span>{sm.label}</span>
                             </span>
                           </td>
-                          <td className="text-xs text-ink-secondary hidden md:table-cell">{ins.operator?.email}</td>
+                          <td className="text-xs text-ink-secondary hidden md:table-cell font-mono">{ins.operator?.email}</td>
                           <td className="text-[10px] font-mono text-ink-muted whitespace-nowrap">
                             {new Date(ins.createdAt).toLocaleDateString()}
                           </td>

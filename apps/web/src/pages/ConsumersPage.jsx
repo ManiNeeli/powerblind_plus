@@ -51,14 +51,14 @@ export default function ConsumersPage() {
 
   return (
     <PageShell
-      title="Consumers"
-      subtitle={total ? `${total.toLocaleString()} consumers` : undefined}
+      title="Monitored Consumers"
+      subtitle={total ? `${total.toLocaleString()} consumers indexed in system` : undefined}
       actions={
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2.5 flex-wrap">
           <button onClick={handleBatchPage} disabled={batching || loading || !consumers.length}
             aria-label="Run predictions on all consumers on this page"
-            className="flex items-center gap-2 px-3 py-2 rounded-md bg-accent/10 text-accent border border-accent/30 text-sm hover:bg-accent/20 transition-colors disabled:opacity-60">
-            {batching ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />{progress}%</>
+            className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-accent/15 text-accent border border-accent/30 text-xs font-semibold hover:bg-accent/25 hover:border-accent/50 hover:shadow-glow-accent transition-all disabled:opacity-50">
+            {batching ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Processing {progress}%</>
                       : <><Zap className="w-3.5 h-3.5" />Predict Page</>}
           </button>
           <ExportButton />
@@ -66,27 +66,27 @@ export default function ConsumersPage() {
       }
     >
       {/* Filter bar */}
-      <div className="flex flex-wrap items-center gap-2 mb-5">
+      <div className="flex flex-wrap items-center gap-2.5 mb-5">
         {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-ink-muted" aria-hidden />
           <input
             value={search} onChange={e => set('search', e.target.value)}
-            placeholder="Consumer ID…" aria-label="Search by consumer ID"
-            className="bg-canvas border border-surface-border rounded-md pl-8 pr-3 py-1.5 text-sm text-ink-primary placeholder-ink-muted outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30 transition-colors w-36 sm:w-44"
+            placeholder="Search Consumer ID…" aria-label="Search by consumer ID"
+            className="form-input pl-9 pr-3 py-1.5 text-xs w-44 sm:w-56"
           />
         </div>
 
         {/* Label filters */}
-        <div className="flex items-center gap-1 flex-wrap" role="group" aria-label="Filter by anomaly class">
-          <Filter className="w-3.5 h-3.5 text-ink-muted shrink-0" aria-hidden />
+        <div className="flex items-center gap-1.5 flex-wrap" role="group" aria-label="Filter by anomaly class">
+          <Filter className="w-3.5 h-3.5 text-ink-muted shrink-0 ml-1" aria-hidden />
           {LABELS.map(l => (
             <button key={l} onClick={() => set('label', l)}
               aria-pressed={label === l}
-              className={cn('px-2.5 py-1 rounded text-xs font-medium border transition-colors',
+              className={cn('px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-150',
                 label === l
-                  ? 'bg-accent/15 text-accent border-accent/30'
-                  : 'text-ink-secondary border-transparent hover:bg-surface hover:text-ink-primary')}>
+                  ? 'bg-accent/15 text-accent border-accent/40 shadow-glow-accent'
+                  : 'text-ink-secondary border-surface-border/60 bg-surface/30 hover:bg-surface hover:text-ink-primary hover:border-surface-border')}>
               {l}
             </button>
           ))}
@@ -95,8 +95,8 @@ export default function ConsumersPage() {
         {/* Type filter */}
         <select value={type} onChange={e => set('type', e.target.value)}
           aria-label="Filter by consumer type"
-          className="ml-auto bg-canvas border border-surface-border rounded-md px-2.5 py-1.5 text-xs text-ink-secondary outline-none focus:border-accent/60 transition-colors">
-          {TYPES.map(t => <option key={t} value={t}>{t === 'All' ? 'All types' : t}</option>)}
+          className="ml-auto bg-canvas border border-surface-border rounded-lg px-3 py-1.5 text-xs font-medium text-ink-secondary outline-none focus:border-accent/60 transition-colors">
+          {TYPES.map(t => <option key={t} value={t}>{t === 'All' ? 'All consumer types' : t}</option>)}
         </select>
       </div>
 
@@ -109,11 +109,11 @@ export default function ConsumersPage() {
               <tr>
                 <th scope="col">Consumer ID</th>
                 <th scope="col">Type</th>
-                <th scope="col">Class</th>
+                <th scope="col">Ground Truth</th>
                 <th scope="col" className="hidden sm:table-cell">Subtype</th>
                 <th scope="col" className="hidden md:table-cell">Anomaly Window</th>
                 <th scope="col" className="hidden sm:table-cell">Base kWh</th>
-                <th scope="col">Latest Prediction</th>
+                <th scope="col">Latest Model Prediction</th>
               </tr>
             </thead>
             <tbody>
@@ -124,7 +124,7 @@ export default function ConsumersPage() {
                       <tr>
                         <td colSpan={7}>
                           <EmptyState icon={Users} title="No consumers match these filters"
-                            sub="Try adjusting the class or type filters, or clear the search." />
+                            sub="Try adjusting the class or type filters, or clear the search query." />
                         </td>
                       </tr>
                     )
@@ -134,7 +134,7 @@ export default function ConsumersPage() {
                         onKeyDown={e => e.key === 'Enter' && navigate(`/consumers/${c.id}`)}
                         tabIndex={0} role="row"
                         aria-label={`Consumer ${c.id}, ${c.groundTruthLabel ?? 'unknown class'}`}>
-                        <td className="font-mono text-accent text-xs">{c.id}</td>
+                        <td className="font-mono text-accent text-xs font-semibold hover:underline">{c.id}</td>
                         <td className="text-xs text-ink-secondary">{c.consumerType}</td>
                         <td><Badge label={c.groundTruthLabel} /></td>
                         <td className="font-mono text-[10px] text-ink-muted hidden sm:table-cell">{c.groundTruthSubtype ?? '—'}</td>
@@ -148,10 +148,10 @@ export default function ConsumersPage() {
                         </td>
                         <td>
                           {c.latestPredictedLabel
-                            ? <div className="flex items-center gap-1.5">
+                            ? <div className="flex items-center gap-2">
                                 <Badge label={c.latestPredictedLabel} />
                                 {c.latestConfidence != null && (
-                                  <span className="text-[10px] font-mono text-ink-muted">
+                                  <span className="text-[10px] font-mono font-bold text-ink-primary">
                                     {(c.latestConfidence * 100).toFixed(0)}%
                                   </span>
                                 )}

@@ -1,7 +1,7 @@
 /**
  * Horizontal stacked bar showing class probability breakdown.
  */
-const COLORS = { Theft:'#ef4444', FaultyMeter:'#f59e0b', CommFailure:'#6366f1', Normal:'#22c55e' };
+const COLORS = { Theft:'#ff3b5c', FaultyMeter:'#f59e0b', CommFailure:'#6366f1', Normal:'#10b981' };
 const ORDER  = ['Theft','FaultyMeter','CommFailure','Normal'];
 
 export default function ClassProbBar({ probabilities = {} }) {
@@ -15,19 +15,20 @@ export default function ClassProbBar({ probabilities = {} }) {
   return (
     <div>
       {/* Stacked bar */}
-      <div className="flex h-3 rounded-full overflow-hidden w-full mb-2">
+      <div className="flex h-3 rounded-full overflow-hidden w-full mb-3 bg-surface-border/50 p-[1px]">
         {entries.map(({ label, prob }) => (
           <div key={label} style={{ width: `${(prob * 100).toFixed(1)}%`, background: COLORS[label] }}
+               className="transition-all duration-500 shadow-sm"
                title={`${label}: ${(prob*100).toFixed(1)}%`} />
         ))}
       </div>
       {/* Legend */}
       <div className="flex flex-wrap gap-3">
         {entries.map(({ label, prob }) => (
-          <div key={label} className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-sm shrink-0" style={{ background: COLORS[label] }} />
-            <span className="text-2xs text-ink-secondary">{label}</span>
-            <span className="text-2xs font-mono font-semibold text-ink-primary">
+          <div key={label} className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-surface/50 border border-surface-border">
+            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: COLORS[label] }} />
+            <span className="text-[11px] text-ink-secondary">{label}</span>
+            <span className="text-[11px] font-mono font-bold text-ink-primary ml-1">
               {(prob * 100).toFixed(1)}%
             </span>
           </div>

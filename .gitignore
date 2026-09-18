@@ -61,3 +61,6 @@ coverage/
 
 # Vite
 *.local
+
+# Design Toolkit
+ui-ux-pro-max-skill/

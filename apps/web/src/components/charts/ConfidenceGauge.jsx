@@ -1,10 +1,10 @@
 import { cn } from '../../lib/utils';
 
 const LABEL_COLORS = {
-  Theft:       { stroke:'#ef4444', text:'#ef4444', bg:'rgba(239,68,68,0.12)'   },
-  FaultyMeter: { stroke:'#f59e0b', text:'#f59e0b', bg:'rgba(245,158,11,0.12)'  },
-  CommFailure: { stroke:'#6366f1', text:'#6366f1', bg:'rgba(99,102,241,0.12)'  },
-  Normal:      { stroke:'#22c55e', text:'#22c55e', bg:'rgba(34,197,94,0.12)'   },
+  Theft:       { stroke:'#ff3b5c', text:'#ff3b5c', bg:'rgba(255,59,92,0.15)'   },
+  FaultyMeter: { stroke:'#f59e0b', text:'#f59e0b', bg:'rgba(245,158,11,0.15)'  },
+  CommFailure: { stroke:'#6366f1', text:'#6366f1', bg:'rgba(99,102,241,0.15)'  },
+  Normal:      { stroke:'#10b981', text:'#10b981', bg:'rgba(16,185,129,0.15)'  },
 };
 
 /**
@@ -24,7 +24,7 @@ export default function ConfidenceGauge({ confidence = 0, label = 'Normal', size
   const rotate  = -225; // start at bottom-left
 
   const pct     = Math.round(confidence * 100);
-  const tier    = pct >= 90 ? 'Very High' : pct >= 75 ? 'High' : pct >= 60 ? 'Moderate' : 'Low';
+  const tier    = pct >= 90 ? 'Critical' : pct >= 75 ? 'High' : pct >= 60 ? 'Moderate' : 'Low';
 
   return (
     <div className="flex flex-col items-center gap-2">
@@ -33,7 +33,7 @@ export default function ConfidenceGauge({ confidence = 0, label = 'Normal', size
           {/* Track */}
           <circle
             cx={cx} cy={cy} r={radius}
-            fill="none" stroke="#1e2a3a" strokeWidth={stroke}
+            fill="none" stroke="rgba(255, 255, 255, 0.08)" strokeWidth={stroke}
             strokeDasharray={`${arcLen} ${circumf - arcLen}`}
             strokeDashoffset={circumf * 0.125}
             strokeLinecap="round"
@@ -47,18 +47,18 @@ export default function ConfidenceGauge({ confidence = 0, label = 'Normal', size
             strokeDashoffset={circumf * 0.125}
             strokeLinecap="round"
             transform={`rotate(${rotate} ${cx} ${cy})`}
-            style={{ transition: 'stroke-dasharray 0.8s ease-out', filter: `drop-shadow(0 0 4px ${colors.stroke}60)` }}
+            style={{ transition: 'stroke-dasharray 0.8s ease-out', filter: `drop-shadow(0 0 6px ${colors.stroke}80)` }}
           />
         </svg>
         {/* Center text */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-2xl font-bold font-mono" style={{ color: colors.text }}>{pct}%</span>
-          <span className="text-2xs text-ink-muted">{tier}</span>
+          <span className="text-2xl font-extrabold font-mono tracking-tight" style={{ color: colors.text }}>{pct}%</span>
+          <span className="text-[10px] font-mono uppercase tracking-wider text-ink-muted">{tier}</span>
         </div>
       </div>
       <div className="text-center">
-        <p className="text-xs font-semibold" style={{ color: colors.text }}>{label}</p>
-        <p className="text-2xs text-ink-muted">confidence</p>
+        <p className="text-xs font-bold uppercase tracking-wider" style={{ color: colors.text }}>{label}</p>
+        <p className="text-[10px] font-mono text-ink-muted">AI Model Confidence</p>
       </div>
     </div>
   );
