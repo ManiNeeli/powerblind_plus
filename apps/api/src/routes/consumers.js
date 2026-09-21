@@ -135,11 +135,22 @@ router.get('/:id/predict', predictLimiter, async (req, res, next) => {
           consumer_id:          consumer.id,
           consumer_type:        consumer.consumerType,
           mean_kwh:             physicsPrediction.physics_proof.meanKwh,
+          std_kwh:              physicsPrediction.physics_proof.stdKwh,
           min_kwh:              physicsPrediction.physics_proof.windowMinKwh,
-          max_kwh:              physicsPrediction.physics_proof.meanKwh * 1.5,
+          max_kwh:              physicsPrediction.physics_proof.maxKwh,
+          kwh_range:            physicsPrediction.physics_proof.kwhRange,
+          kwh_iqr:              physicsPrediction.physics_proof.kwhIqr,
+          kwh_trend_slope:      physicsPrediction.physics_proof.kwhTrendSlope,
           mean_voltage:         physicsPrediction.physics_proof.meanVoltage,
+          std_voltage:          physicsPrediction.physics_proof.stdVoltage,
           mean_current:         physicsPrediction.physics_proof.meanCurrent,
           mean_power_factor:    physicsPrediction.physics_proof.meanPowerFactor,
+          std_pf:               physicsPrediction.physics_proof.stdPf,
+          pf_below_09_ratio:    physicsPrediction.physics_proof.pfBelow09Ratio,
+          missing_ratio:        physicsPrediction.physics_proof.missingRatio,
+          comm_flag_ratio:      physicsPrediction.physics_proof.commFlagRatio,
+          max_missing_streak:   physicsPrediction.physics_proof.maxMissingStreak,
+          peak_to_avg_ratio:    physicsPrediction.physics_proof.peakToAvgRatio,
           baseline_deviation:   physicsPrediction.physics_proof.baselineDeviationPct / 100,
           ground_truth_label:   consumer.groundTruthLabel,
           ground_truth_subtype: consumer.groundTruthSubtype,
@@ -147,14 +158,33 @@ router.get('/:id/predict', predictLimiter, async (req, res, next) => {
       });
       if (resp.ok) {
         const mlData = await resp.json();
-        // Merge ML prediction with verified physics proof
+        const proof = physicsPrediction.physics_proof;
+        const isPhysicallyNormal = (
+          proof &&
+          proof.kclCircuitState === 'VERIFIED_BALANCED' &&
+          Math.abs(proof.baselineDeviationPct) < 18 &&
+          proof.zeroStreakDays < 3 &&
+          proof.stuckStreakDays < 4 &&
+          proof.missingRatio < 0.02
+        );
+
+        // If physics proves balanced circuit, enforce Normal. If physics confirms definite circuit
+        // anomaly (e.g. stuck register, packet drop, zero shunt), prioritize physical proof.
+        // Otherwise use ML predicted label.
+        const verifiedLabel = isPhysicallyNormal
+          ? 'Normal'
+          : ((physicsPrediction.predicted_label !== 'Normal' && proof && proof.kclCircuitState !== 'NORMAL_IMPEDANCE')
+              ? physicsPrediction.predicted_label
+              : (mlData.predicted_label || physicsPrediction.predicted_label));
+
         prediction = {
           ...physicsPrediction,
           ...mlData,
-          predicted_label:      mlData.predicted_label || physicsPrediction.predicted_label,
-          predicted_subtype:    mlData.predicted_subtype || physicsPrediction.predicted_subtype,
-          confidence:           mlData.confidence || physicsPrediction.confidence,
+          predicted_label:      verifiedLabel,
+          predicted_subtype:    physicsPrediction.predicted_subtype || mlData.predicted_subtype,
+          confidence:           Math.max(mlData.confidence || 0, physicsPrediction.confidence),
           class_probabilities:  mlData.class_probabilities || physicsPrediction.class_probabilities,
+          recommendation:       physicsPrediction.recommendation || mlData.recommendation,
           physics_proof:        physicsPrediction.physics_proof,
         };
       }

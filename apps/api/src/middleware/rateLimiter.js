@@ -19,7 +19,7 @@ const authLimiter = rateLimit({
 /** Prediction endpoint — ML calls are expensive */
 const predictLimiter = rateLimit({
   windowMs:        60 * 1000,
-  max:             30,
+  max:             process.env.NODE_ENV === 'production' ? 60 : 300,
   standardHeaders: true,
   legacyHeaders:   false,
   skip:            isTest,

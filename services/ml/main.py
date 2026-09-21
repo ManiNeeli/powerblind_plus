@@ -75,16 +75,20 @@ class ConsumerFeatures(BaseModel):
     min_kwh:               Optional[float] = None
     max_kwh:               Optional[float] = None
     kwh_range:             Optional[float] = None
+    kwh_iqr:               Optional[float] = None
     missing_ratio:         Optional[float] = None
     comm_flag_ratio:       Optional[float] = None
     mean_voltage:          Optional[float] = None
     std_voltage:           Optional[float] = None
+    voltage_range:         Optional[float] = None
     mean_current:          Optional[float] = None
+    std_current:           Optional[float] = None
     mean_power_factor:     Optional[float] = None
     std_pf:                Optional[float] = None
     baseline_deviation:    Optional[float] = None
     kwh_trend_slope:       Optional[float] = None
     peak_to_avg_ratio:     Optional[float] = None
+    weekend_weekday_ratio: Optional[float] = None
     max_missing_streak:    Optional[float] = None
     pf_below_09_ratio:     Optional[float] = None
     # Ground truth — used by MOCK mode only, ignored by real model
@@ -115,25 +119,25 @@ class BatchRequest(BaseModel):
     consumers: List[ConsumerFeatures]
 
 class BatchResponse(BaseModel):
-    predictions: List[PredictionResponse]
     total:       int
-    duration_ms: int
+    successful:  int
+    predictions: List[PredictionResponse]
 
 # ── Real model prediction ─────────────────────────────────────────────────────
 EXPLANATIONS = {
     "Theft": {
-        "T1_PartialReduction": "Flagged as Electricity Theft (T1 — Partial Reduction). Daily consumption reduced to a constant fraction of baseline while voltage remains normal, consistent with a mechanical meter tamper or magnet attack.",
-        "T2_ZeroConsumption":  "Flagged as Electricity Theft (T2 — Zero Consumption). Meter reports near-zero usage while voltage confirms an active live connection. Strongly consistent with a complete meter bypass.",
-        "T3_RandomReduction":  "Flagged as Electricity Theft (T3 — Random Reduction). Time-varying downward reduction relative to baseline — consistent with an electronic tampering device varying its suppression ratio.",
-        "T4_ByPassMeter":      "Flagged as Electricity Theft (T4 — Bypass). Readings flatlined at an abnormally low constant value regardless of expected diurnal patterns. Full meter bypass indicated.",
-        "T5_ReverseTamper":    "Flagged as Electricity Theft (T5 — Reverse Tamper). Consumption shows temporal smearing of peak-load timing, a known technique to obscure anomalous behaviour in aggregated reads.",
+        "T1_PartialReduction": "Flagged as Electricity Theft (T1 — Partial Load Shunting). Sudden and sustained consumption drop during attack window while line voltage and power factor remained nominal.",
+        "T2_ZeroConsumption":  "Flagged as Electricity Theft (T2 — Complete Meter Bypass). Meter recorded near-zero readings for extended consecutive days despite energized feeder line.",
+        "T3_RandomReduction":  "Flagged as Electricity Theft (T3 — Random Tampering). Significant variance reduction and artificial flattening of load profile consistent with tampering circuitry.",
+        "T4_ByPassMeter":      "Flagged as Electricity Theft (T4 — Physical Shunt Bypass). Substantial drop to an uncharacteristically low flatline baseline while active circuit voltage was present.",
+        "T5_ReverseTamper":    "Flagged as Electricity Theft (T5 — Reverse Current / CT Inversion). Phase-angle mismatch and current inversion signatures detected.",
         "default":             "Flagged as Electricity Theft. Consumption pattern deviates significantly from expected baseline in a manner consistent with deliberate meter tampering.",
     },
     "FaultyMeter": {
         "F1_StuckAt":      "Flagged as Faulty Meter (F1 — Stuck Register). Meter reported an identical value for multiple consecutive days. Physical inspection and register replacement recommended.",
         "F2_Drift":        "Flagged as Faulty Meter (F2 — Calibration Drift). Gradual linear deviation from historical baseline consistent with mechanical calibration decay. Recalibration recommended.",
         "F3_NoiseSpike":   "Flagged as Faulty Meter (F3 — Sensor Spikes). High-magnitude random spikes detected. Consistent with a failing current transformer or intermittent connection fault.",
-        "F4_UnderRegister":"Flagged as Faulty Meter (F4 — Under-Registration). Consistent fixed-percentage under-reporting with no seasonal variation — consistent with miscalibration causing revenue loss.",
+        "F4_UnderRegister":"Flagged as Faulty Meter (F4 — Under-Registration). Consistent fixed-percentage under-registering with no seasonal variation — consistent with miscalibration causing revenue loss.",
         "default":         "Flagged as Faulty Meter. Readings show patterns inconsistent with normal meter operation. Physical inspection recommended.",
     },
     "CommFailure": {
@@ -149,29 +153,34 @@ EXPLANATIONS = {
 PRIORITY = {"Theft": "HIGH", "FaultyMeter": "MEDIUM", "CommFailure": "LOW", "Normal": "LOW"}
 
 def _features_to_dict(f: ConsumerFeatures) -> Dict[str, float]:
+    mean_kwh = float(f.mean_kwh) if f.mean_kwh is not None else 0.0
+    std_kwh  = float(f.std_kwh)  if f.std_kwh  is not None else 0.0
+    min_kwh  = float(f.min_kwh)  if f.min_kwh  is not None else 0.0
+    max_kwh  = float(f.max_kwh)  if f.max_kwh  is not None else 0.0
+    kwh_range = float(f.kwh_range) if f.kwh_range is not None else max(0.0, max_kwh - min_kwh)
     return {
-        "mean_kwh":              f.mean_kwh              or 0.0,
-        "std_kwh":               f.std_kwh               or 0.0,
-        "min_kwh":               f.min_kwh               or 0.0,
-        "max_kwh":               f.max_kwh               or 0.0,
-        "kwh_range":             f.kwh_range             or 0.0,
-        "kwh_iqr":               0.0,
-        "kwh_trend_slope":       f.kwh_trend_slope       or 0.0,
-        "kwh_cv":                (f.std_kwh / f.mean_kwh) if (f.mean_kwh and f.mean_kwh > 0) else 0.0,
-        "mean_voltage":          f.mean_voltage          or 230.0,
-        "std_voltage":           f.std_voltage           or 0.0,
-        "voltage_range":         0.0,
-        "mean_current":          f.mean_current          or 0.0,
-        "std_current":           0.0,
-        "mean_pf":               f.mean_power_factor     or 1.0,
-        "std_pf":                f.std_pf                or 0.0,
-        "pf_below_09_ratio":     f.pf_below_09_ratio     or 0.0,
-        "missing_ratio":         f.missing_ratio         or 0.0,
-        "comm_flag_ratio":       f.comm_flag_ratio       or 0.0,
-        "max_missing_streak":    f.max_missing_streak    or 0.0,
-        "peak_to_avg_ratio":     f.peak_to_avg_ratio     or 1.0,
-        "weekend_weekday_ratio": 1.0,
-        "baseline_deviation_pct": f.baseline_deviation   or 0.0,
+        "mean_kwh":              mean_kwh,
+        "std_kwh":               std_kwh,
+        "min_kwh":               min_kwh,
+        "max_kwh":               max_kwh,
+        "kwh_range":             kwh_range,
+        "kwh_iqr":               float(f.kwh_iqr) if f.kwh_iqr is not None else 0.0,
+        "kwh_trend_slope":       float(f.kwh_trend_slope or 0.0),
+        "kwh_cv":                (std_kwh / mean_kwh) if (mean_kwh > 0 and std_kwh > 0) else 0.0,
+        "mean_voltage":          float(f.mean_voltage or 230.0),
+        "std_voltage":           float(f.std_voltage or 0.0),
+        "voltage_range":         float(f.voltage_range or 0.0),
+        "mean_current":          float(f.mean_current or 0.0),
+        "std_current":           float(f.std_current or 0.0),
+        "mean_pf":               float(f.mean_power_factor or 1.0),
+        "std_pf":                float(f.std_pf or 0.0),
+        "pf_below_09_ratio":     float(f.pf_below_09_ratio or 0.0),
+        "missing_ratio":         float(f.missing_ratio or 0.0),
+        "comm_flag_ratio":       float(f.comm_flag_ratio or 0.0),
+        "max_missing_streak":    float(f.max_missing_streak or 0.0),
+        "peak_to_avg_ratio":     float(f.peak_to_avg_ratio or 1.0),
+        "weekend_weekday_ratio": float(f.weekend_weekday_ratio or 1.0),
+        "baseline_deviation_pct": float(f.baseline_deviation or 0.0),
         "type_residential_small": int(f.consumer_type == "residential_small"),
         "type_residential_large": int(f.consumer_type == "residential_large"),
         "type_small_commercial":  int(f.consumer_type == "small_commercial"),

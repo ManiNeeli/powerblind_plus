@@ -66,12 +66,42 @@ function analyzeConsumerPhysics(consumer, readings = []) {
 
   // Overall Variance & CV
   let sumSqDiff = 0;
+  let sumSqV = 0;
+  let sumSqPF = 0;
+  let pfBelow09Count = 0;
   for (let i = 0; i < validCount; i++) {
     sumSqDiff += Math.pow(validReadings[i].kwh - meanKwh, 2);
+    const v = validReadings[i].voltageV ?? 230;
+    const pf = validReadings[i].powerFactor ?? 0.93;
+    sumSqV += Math.pow(v - meanV, 2);
+    sumSqPF += Math.pow(pf - meanPF, 2);
+    if (pf < 0.9) pfBelow09Count++;
   }
   const variance = sumSqDiff / (validCount || 1);
   const stdKwh = Math.sqrt(variance);
   const kwhCv = stdKwh / (meanKwh > 0 ? meanKwh : 1);
+  const stdV = Math.sqrt(sumSqV / (validCount || 1));
+  const stdPF = Math.sqrt(sumSqPF / (validCount || 1));
+  const pfBelow09Ratio = pfBelow09Count / (validCount || 1);
+
+  // IQR and peak-to-avg
+  const sortedKwh = validReadings.map(r => r.kwh).sort((a, b) => a - b);
+  const q25 = sortedKwh[Math.floor(sortedKwh.length * 0.25)] || 0;
+  const q75 = sortedKwh[Math.floor(sortedKwh.length * 0.75)] || 0;
+  const kwhIqr = q75 - q25;
+  const peakToAvgRatio = meanKwh > 0 ? maxKwh / meanKwh : 1.0;
+
+  // Max missing streak
+  let maxMissingStreak = 0;
+  let curMissingStreak = 0;
+  for (let i = 0; i < readings.length; i++) {
+    if (readings[i].kwh == null || isNaN(readings[i].kwh)) {
+      curMissingStreak++;
+      if (curMissingStreak > maxMissingStreak) maxMissingStreak = curMissingStreak;
+    } else {
+      curMissingStreak = 0;
+    }
+  }
 
   // Power Law Verification: Theoretical daily kWh from V, I, PF
   const theoreticalDailyKwh = (meanV * meanI * meanPF * 24) / 1000;
@@ -187,26 +217,30 @@ function analyzeConsumerPhysics(consumer, readings = []) {
   let detectedSubtype = null;
 
   // 1. Check Communication Failure
-  if (missingRatio >= 0.05 || commFlagRatio >= 0.08) {
-    scoreComm += 9.0;
-    detectedSubtype = missingRatio >= 0.05 ? 'C1_MissingData' : 'C3_ClockSkew';
-  } else if (maxDuplicateCommStreak >= 4 || (commFlagCount >= 3 && maxDuplicateCommStreak >= 2)) {
-    scoreComm += 8.5;
-    detectedSubtype = 'C2_DuplicateTransmission';
+  if (missingRatio >= 0.03 || commFlagRatio >= 0.015 || commFlagCount >= 3) {
+    scoreComm += 9.5;
+    if (missingRatio >= 0.03) {
+      detectedSubtype = 'C1_MissingData';
+    } else if (maxDuplicateCommStreak >= 3 || duplicateCommStreak >= 2) {
+      detectedSubtype = 'C2_DuplicateTransmission';
+    } else {
+      detectedSubtype = 'C3_ClockSkew';
+    }
   }
 
   // 2. Check Hardware Fault
   if (maxStuckStreak >= 6) {
     scoreFault += 9.5;
     detectedSubtype = 'F1_StuckAt';
-  } else if (Math.abs(slope) > 0.038 && Math.abs(baselineDelta) > 0.22) {
-    scoreFault += 7.8;
+  } else if (Math.abs(slope) > 0.014 && (Math.abs(baselineDelta) > 0.15 || Math.abs(maxWindowDropDelta) > 0.20)) {
+    scoreFault += 8.2;
     detectedSubtype = 'F2_Drift';
   } else if (spikeCount >= 3 && maxZeroStreak < 5) {
-    scoreFault += 7.2;
+    scoreFault += 7.5;
     detectedSubtype = 'F3_NoiseSpike';
-  } else if (baselineDeviationPct <= -18 && baselineDeviationPct >= -38 && maxWindowDropPct > -42 && kwhCv > 0.12 && maxZeroStreak < 4) {
-    scoreFault += 6.0;
+  } else if (baselineDeviationPct <= -15 && baselineDeviationPct >= -42 && maxZeroStreak <= 2 && windowCv >= 0.08) {
+    // Systematic calibration under-registration without total zero bypass
+    scoreFault += 7.0;
     detectedSubtype = 'F4_UnderRegister';
   }
 
@@ -393,12 +427,25 @@ function analyzeConsumerPhysics(consumer, readings = []) {
     predicted_at: new Date().toISOString(),
     physics_proof: {
       meanKwh: Math.round(meanKwh * 100) / 100,
+      stdKwh: Math.round(stdKwh * 100) / 100,
       baseKwh: Math.round(baseKwh * 100) / 100,
       windowMinKwh: Math.round(minWindow30Avg * 100) / 100,
+      maxKwh: Math.round(maxKwh * 100) / 100,
+      kwhRange: Math.round((maxKwh - minKwh) * 100) / 100,
+      kwhIqr: Math.round(kwhIqr * 100) / 100,
+      kwhTrendSlope: Math.round(slope * 10000) / 10000,
+      kwhCv: Math.round(kwhCv * 1000) / 1000,
       windowDropPct: Math.round(maxWindowDropPct * 10) / 10,
       meanVoltage: Math.round(meanV * 10) / 10,
+      stdVoltage: Math.round(stdV * 100) / 100,
       meanCurrent: Math.round(meanI * 100) / 100,
       meanPowerFactor: Math.round(meanPF * 100) / 100,
+      stdPf: Math.round(stdPF * 1000) / 1000,
+      pfBelow09Ratio: Math.round(pfBelow09Ratio * 1000) / 1000,
+      missingRatio: Math.round(missingRatio * 1000) / 1000,
+      commFlagRatio: Math.round(commFlagRatio * 1000) / 1000,
+      maxMissingStreak,
+      peakToAvgRatio: Math.round(peakToAvgRatio * 100) / 100,
       unmeteredDailyKwh: Math.round(unmeteredDailyKwh * 100) / 100,
       annualLossKwh: Math.round(annualLossKwh),
       estimatedRevenueLossINR: Math.round(estimatedRevenueLossINR),
