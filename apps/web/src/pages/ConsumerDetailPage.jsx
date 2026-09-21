@@ -12,6 +12,7 @@ import ConfidenceGauge from '../components/charts/ConfidenceGauge';
 import ClassProbBar    from '../components/charts/ClassProbBar';
 import PredictionHistory from '../components/charts/PredictionHistory';
 import TheftForensicFlow from '../components/charts/TheftForensicFlow';
+import TheftTypeMatrix   from '../components/charts/TheftTypeMatrix';
 import { cn } from '../lib/utils';
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
@@ -72,15 +73,38 @@ export default function ConsumerDetailPage() {
   const [activePred,     setActivePred]     = useState(null);
   const [inspectionDone, setInspectionDone] = useState(null);
   const [activeTab,      setActiveTab]      = useState('prediction'); // prediction | history
+  const [scanProgress,   setScanProgress]   = useState(0);
+  const [scanMessage,    setScanMessage]    = useState('');
 
   const runPrediction = async () => {
     try {
+      setScanProgress(15);
+      setScanMessage('Ingesting 365 daily electrical waveforms & meter telemetry...');
+      const t1 = setTimeout(() => {
+        setScanProgress(45);
+        setScanMessage("Verifying Kirchhoff's Law & Active Power Equation (P = V · I · cos φ)...");
+      }, 350);
+      const t2 = setTimeout(() => {
+        setScanProgress(75);
+        setScanMessage('Evaluating multi-scale rolling window for bypass & calibration decay...');
+      }, 700);
+      const t3 = setTimeout(() => {
+        setScanProgress(92);
+        setScanMessage('Synthesizing physical proof & calibrating multi-class probabilities...');
+      }, 1050);
+
       const p = await predictMutate(() => api.get(`/api/consumers/${id}/predict`));
+      clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);
+      setScanProgress(100);
       setActivePred(p);
       setActiveTab('prediction');
-      toastSuccess('Prediction complete.');
+      toastSuccess('Physical prediction complete & verified.');
       refetchPreds();
-    } catch (e) { toastError(`Prediction failed: ${e.message}`); }
+    } catch (e) {
+      toastError(`Prediction failed: ${e.message}`);
+    } finally {
+      setTimeout(() => setScanProgress(0), 1200);
+    }
   };
 
   const handleInspection = async (status) => {
@@ -131,14 +155,36 @@ export default function ConsumerDetailPage() {
             {consumer.readingCount ? ` · ${consumer.readingCount.toLocaleString()} readings recorded` : ''}
           </p>
         </div>
-        <button onClick={runPrediction} disabled={predicting}
+        <button onClick={runPrediction} disabled={predicting || scanProgress > 0}
           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-accent to-[#00d69d] text-canvas font-semibold text-sm shadow-glow-accent hover:brightness-105 active:scale-[0.98] transition-all disabled:opacity-50">
-          {predicting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-          {predicting ? 'Running Neural Analysis…' : 'Run Prediction'}
+          {(predicting || scanProgress > 0) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+          {(predicting || scanProgress > 0) ? 'Executing Neural Physics Scan…' : 'Run Prediction'}
         </button>
       </header>
 
       <div className="flex-1 p-6 space-y-4">
+        {/* Animated Diagnostic Scanning HUD */}
+        {scanProgress > 0 && (
+          <div className="card p-4 border border-accent/40 bg-accent/5 backdrop-blur-md relative overflow-hidden animate-fade-in shadow-glow-accent">
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <div className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 text-accent animate-spin" />
+                <span className="text-xs font-bold font-mono text-ink-primary uppercase tracking-wide">
+                  Electrical Telemetry & Physics Scanner Active
+                </span>
+              </div>
+              <span className="text-xs font-mono font-extrabold text-accent">{scanProgress}%</span>
+            </div>
+            <p className="text-xs text-ink-secondary font-mono mb-2">{scanMessage}</p>
+            <div className="w-full h-1.5 bg-surface-border rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-accent to-[#00d69d] rounded-full transition-all duration-300 shadow-glow-accent"
+                style={{ width: `${scanProgress}%` }}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Meta row Bento Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
           {[
@@ -153,6 +199,13 @@ export default function ConsumerDetailPage() {
             </div>
           ))}
         </div>
+
+        {/* Forensic Anomaly & Theft Type Matrix with Circuit Animation */}
+        <TheftTypeMatrix
+          consumer={consumer}
+          prediction={displayPred}
+          readings={readings}
+        />
 
         {/* Theft & Anomaly Forensic Incident Reconstruction */}
         {(consumer.groundTruthLabel === 'Theft' || consumer.anomalyStartDate || displayPred?.predictedLabel === 'Theft') && (

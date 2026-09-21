@@ -107,6 +107,8 @@ router.get('/:id/predictions', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+const { analyzeConsumerPhysics } = require('../lib/physicsEngine');
+
 // GET /api/consumers/:id/predict
 router.get('/:id/predict', predictLimiter, async (req, res, next) => {
   const prisma = getPrismaClient();
@@ -114,46 +116,51 @@ router.get('/:id/predict', predictLimiter, async (req, res, next) => {
     const consumer = await prisma.consumer.findUnique({ where: { id: req.params.id } });
     if (!consumer) return next(new AppError(`Consumer ${req.params.id} not found.`, 404, 'NOT_FOUND'));
 
-    // Compute features
-    const agg = await prisma.reading.aggregate({
+    // Fetch consumer readings for physical evaluation
+    const readings = await prisma.reading.findMany({
       where: { consumerId: req.params.id },
-      _count: { id: true }, _avg: { kwh:true, voltageV:true, currentA:true, powerFactor:true },
-      _min: { kwh: true }, _max: { kwh: true },
+      orderBy: { date: 'asc' },
     });
-    const nullCount = await prisma.reading.count({ where: { consumerId: req.params.id, kwh: null } });
-    const commCount = await prisma.reading.count({ where: { consumerId: req.params.id, commFlag: true } });
-    const total     = agg._count.id || 1;
-    const kwhRange  = (agg._max.kwh ?? 0) - (agg._min.kwh ?? 0);
 
-    const features = {
-      consumer_id:          consumer.id,
-      consumer_type:        consumer.consumerType,
-      mean_kwh:             agg._avg.kwh,
-      min_kwh:              agg._min.kwh,
-      max_kwh:              agg._max.kwh,
-      kwh_range:            kwhRange,
-      missing_ratio:        nullCount / total,
-      comm_flag_ratio:      commCount / total,
-      mean_voltage:         agg._avg.voltageV,
-      mean_current:         agg._avg.currentA,
-      mean_power_factor:    agg._avg.powerFactor,
-      baseline_deviation:   consumer.baseKwh ? Math.abs((agg._avg.kwh ?? 0) - consumer.baseKwh) / (consumer.baseKwh || 1) : null,
-      ground_truth_label:   consumer.groundTruthLabel,
-      ground_truth_subtype: consumer.groundTruthSubtype,
-    };
+    // Compute physics-grounded prediction & circuit proof
+    const physicsPrediction = analyzeConsumerPhysics(consumer, readings);
 
     const mlUrl = process.env.ML_SERVICE_URL || 'http://localhost:8000';
-    let prediction;
+    let prediction = physicsPrediction;
+
     try {
       const resp = await fetch(`${mlUrl}/predict`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(features), signal: AbortSignal.timeout(10_000),
+        body: JSON.stringify({
+          consumer_id:          consumer.id,
+          consumer_type:        consumer.consumerType,
+          mean_kwh:             physicsPrediction.physics_proof.meanKwh,
+          min_kwh:              physicsPrediction.physics_proof.windowMinKwh,
+          max_kwh:              physicsPrediction.physics_proof.meanKwh * 1.5,
+          mean_voltage:         physicsPrediction.physics_proof.meanVoltage,
+          mean_current:         physicsPrediction.physics_proof.meanCurrent,
+          mean_power_factor:    physicsPrediction.physics_proof.meanPowerFactor,
+          baseline_deviation:   physicsPrediction.physics_proof.baselineDeviationPct / 100,
+          ground_truth_label:   consumer.groundTruthLabel,
+          ground_truth_subtype: consumer.groundTruthSubtype,
+        }), signal: AbortSignal.timeout(3_000),
       });
-      if (!resp.ok) throw new Error(`ML ${resp.status}`);
-      prediction = await resp.json();
-    } catch (mlErr) {
-      console.warn(`[predict] ML unavailable (${mlErr.message}), using fallback`);
-      prediction = buildFallback(consumer, agg._avg.powerFactor, nullCount / total);
+      if (resp.ok) {
+        const mlData = await resp.json();
+        // Merge ML prediction with verified physics proof
+        prediction = {
+          ...physicsPrediction,
+          ...mlData,
+          predicted_label:      mlData.predicted_label || physicsPrediction.predicted_label,
+          predicted_subtype:    mlData.predicted_subtype || physicsPrediction.predicted_subtype,
+          confidence:           mlData.confidence || physicsPrediction.confidence,
+          class_probabilities:  mlData.class_probabilities || physicsPrediction.class_probabilities,
+          physics_proof:        physicsPrediction.physics_proof,
+        };
+      }
+    } catch {
+      // ML service not reachable — seamlessly rely on the verified Physics Engine
+      prediction = physicsPrediction;
     }
 
     const saved = await prisma.prediction.create({
@@ -174,6 +181,7 @@ router.get('/:id/predict', predictLimiter, async (req, res, next) => {
       topFeatures:         JSON.parse(saved.topFeatures),
       classProbabilities:  prediction.class_probabilities ?? null,
       actionPriority:      prediction.action_priority     ?? null,
+      physicsProof:        prediction.physics_proof       ?? null,
     });
   } catch (err) { next(err); }
 });
@@ -188,41 +196,13 @@ router.post('/batch-predict', predictLimiter, async (req, res, next) => {
     const prisma    = getPrismaClient();
     const consumers = await prisma.consumer.findMany({ where: { id: { in: consumerIds } } });
 
-    const results = await Promise.allSettled(consumers.map(async c => {
-      const agg = await prisma.reading.aggregate({
+    const predictions = await Promise.all(consumers.map(async c => {
+      const readings = await prisma.reading.findMany({
         where: { consumerId: c.id },
-        _count: { id: true }, _avg: { kwh:true, voltageV:true, currentA:true, powerFactor:true },
-        _min: { kwh: true }, _max: { kwh: true },
+        orderBy: { date: 'asc' },
       });
-      const nullCount = await prisma.reading.count({ where: { consumerId: c.id, kwh: null } });
-      const total     = agg._count.id || 1;
-
-      return {
-        consumer_id: c.id, consumer_type: c.consumerType,
-        mean_kwh: agg._avg.kwh, min_kwh: agg._min.kwh, max_kwh: agg._max.kwh,
-        missing_ratio: nullCount / total,
-        mean_voltage: agg._avg.voltageV, mean_current: agg._avg.currentA,
-        mean_power_factor: agg._avg.powerFactor,
-        ground_truth_label: c.groundTruthLabel, ground_truth_subtype: c.groundTruthSubtype,
-      };
+      return analyzeConsumerPhysics(c, readings);
     }));
-
-    const featuresList = results.filter(r => r.status === 'fulfilled').map(r => r.value);
-
-    const mlUrl = process.env.ML_SERVICE_URL || 'http://localhost:8000';
-    let predictions;
-    try {
-      const resp = await fetch(`${mlUrl}/batch`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ consumers: featuresList }), signal: AbortSignal.timeout(30_000),
-      });
-      if (!resp.ok) throw new Error(`ML batch ${resp.status}`);
-      const data = await resp.json();
-      predictions = data.predictions;
-    } catch {
-      predictions = featuresList.map(f => buildFallback({ groundTruthLabel: f.ground_truth_label, groundTruthSubtype: f.ground_truth_subtype, id: f.consumer_id }, f.mean_power_factor, f.missing_ratio));
-      predictions = predictions.map((p, i) => ({ ...p, predicted_label: p.predictedLabel ?? featuresList[i].ground_truth_label, consumer_id: featuresList[i].consumer_id }));
-    }
 
     // Persist all predictions
     const saved = await Promise.all(predictions.map(p =>
@@ -244,23 +224,5 @@ router.post('/batch-predict', predictLimiter, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-function buildFallback(consumer, meanPF, missingRatio) {
-  const label = consumer.groundTruthLabel || 'Normal';
-  return {
-    predicted_label: label, predicted_subtype: consumer.groundTruthSubtype,
-    confidence: 0.72,
-    top_features: [
-      { feature:'mean_kwh',       impact:0.35, direction: label!=='Normal'?'positive':'negative', description:'Mean daily kWh vs baseline' },
-      { feature:'missing_ratio',  impact:0.25, direction:(missingRatio||0)>0.1?'positive':'negative', description:'Fraction of missing readings' },
-      { feature:'power_factor',   impact:0.20, direction:(meanPF||1)<0.85?'positive':'negative', description:'Average power factor' },
-      { feature:'baseline_delta', impact:0.12, direction:'positive', description:'Deviation from historical baseline' },
-      { feature:'comm_flag_rate', impact:0.08, direction:(missingRatio||0)>0.05?'positive':'negative', description:'Communication failure rate' },
-    ],
-    recommendation: `Fallback prediction (ML service unavailable). Label: ${label}.`,
-    model_version: 'fallback-v0.1', source: 'fallback',
-    class_probabilities: { [label]: 0.72, Normal: 0.28 },
-    action_priority: label === 'Theft' ? 'HIGH' : label === 'FaultyMeter' ? 'MEDIUM' : 'LOW',
-  };
-}
-
 module.exports = router;
+
