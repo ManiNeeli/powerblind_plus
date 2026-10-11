@@ -97,6 +97,25 @@ docker compose up -d                          # start everything
 Open **http://localhost** in your browser.
 
 See [DEPLOYMENT.md](./DEPLOYMENT.md) for HTTPS, PostgreSQL, and production setup.
+See [VERCEL_DEPLOYMENT_GUIDE.md](./VERCEL_DEPLOYMENT_GUIDE.md) for 1-click cloud deployment on Vercel.
+
+---
+
+## Cloud Deployment (Vercel Multi-Services)
+
+PowerBlind+ is configured for single-project multi-service deployment on [Vercel](https://vercel.com):
+
+1. **Import Git Repository**: In your Vercel Dashboard, import `https://github.com/ManiNeeli/powerblind_plus`.
+2. **Services Architecture (`vercel.json`)**:
+   - `web` (`apps/web`): Static Vite React SPA (public at `/(.*)`).
+   - `api` (`apps/api`): Node.js Express REST API (public at `/api/(.*)`).
+   - `ml` (`services/ml`): FastAPI Python ML service (internal, bound to `api` via `ML_SERVICE_URL`).
+3. **Required Environment Variables**:
+   - `MONGODB_URI`: Cloud MongoDB Atlas connection string
+   - `MONGODB_DB_NAME`: `powerblind`
+   - `JWT_ACCESS_SECRET`: Secret key for access tokens
+   - `JWT_REFRESH_SECRET`: Secret key for refresh tokens
+   - `NODE_ENV`: `production`
 
 ---
 
