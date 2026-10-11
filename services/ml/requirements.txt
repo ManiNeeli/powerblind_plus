@@ -1,16 +1,11 @@
-# Core API
+# Core API Runtime
 fastapi>=0.112.0
-uvicorn[standard]>=0.30.0
+uvicorn>=0.30.0
 pydantic>=2.8.0
 
-# ML — Phase 4
+# ML Serving & Inference Runtime (optimized for Serverless < 500MB)
 scikit-learn>=1.5.0
 xgboost>=2.1.0
-shap>=0.46.0
 pandas>=2.2.0
 numpy>=1.26.0
 joblib>=1.4.0
-imbalanced-learn>=0.12.0
-
-# Utils
-python-multipart>=0.0.9

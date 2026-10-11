@@ -12,7 +12,7 @@ falls back to mock mode when no model file is found.
 ```bash
 cd services/ml
 python3 -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r requirements-training.txt
 ```
 
 ### 2. Make sure the dataset is in `/data`
