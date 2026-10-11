@@ -6,10 +6,17 @@ const { audit } = require('../lib/audit');
 const router = express.Router();
 router.use(requireAuth, requireRole('ADMIN'));
 
-const mlUrl = () => process.env.ML_SERVICE_URL || 'http://localhost:8000';
+const mlBaseUrl = () => process.env.ML_SERVICE_URL || 'http://localhost:8000';
+
+function getMlUrl(subPath) {
+  const base = mlBaseUrl();
+  const cleanPath = subPath.startsWith('/') ? subPath.slice(1) : subPath;
+  return new URL(cleanPath, base.endsWith('/') ? base : `${base}/`);
+}
 
 async function mlFetch(path, opts = {}) {
-  const resp = await fetch(`${mlUrl()}${path}`, {
+  const targetUrl = getMlUrl(path);
+  const resp = await fetch(targetUrl, {
     ...opts,
     signal: AbortSignal.timeout(opts.timeout ?? 8000),
   });

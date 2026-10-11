@@ -5,17 +5,17 @@ This guide provides step-by-step instructions for hosting **PowerBlind+** on [Ve
 
 ---
 
-## 🏗️ Architecture on Vercel
+## 🏗️ Multi-Service Architecture on Vercel
 
-PowerBlind+ is configured for zero-friction full-stack deployment on Vercel:
+PowerBlind+ is configured as a unified **Vercel Services** multi-service project:
 
-| Component | Technology | Vercel Deployment Mode |
-| :--- | :--- | :--- |
-| **Frontend** | React 18 + Vite + Tailwind CSS | Static SPA deployed to edge CDN (`apps/web/dist`) |
-| **Backend API** | Express.js REST API | Vercel Serverless Functions (`/api/*` via `api/index.js`) |
-| **Database** | MongoDB | Cloud MongoDB (MongoDB Atlas or remote cluster) |
-| **Routing** | React Router v6 | Transparent SPA rewrites (`/(.*)` -> `/index.html`) |
-| **Security** | Helmet + CORS + Rate Limiter | Auto-configured with HTTPS and Vercel domains |
+| Service | Root Directory | Framework / Runtime | Visibility | Role & Routing |
+| :--- | :--- | :--- | :--- | :--- |
+| **`web`** | `apps/web` | Vite (React 18 + Tailwind) | **Public** (`/(.*)`) | Frontend user interface & dashboard |
+| **`api`** | `apps/api` | Express.js (Node.js) | **Public** (`/api/(.*)`) | Core business logic, auth, & database adapter |
+| **`ml`** | `services/ml` | FastAPI (Python) | **Internal only** | XGBoost ML inference, SHAP analysis, & retraining |
+
+> 🔒 **Service Bindings**: The `api` service automatically connects to the internal `ml` service using a Vercel service binding, which dynamically injects the internal URL via the `ML_SERVICE_URL` environment variable. The `ml` service is never directly exposed to the public internet.
 
 ---
 

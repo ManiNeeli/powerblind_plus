@@ -78,6 +78,14 @@ app.use(cookieParser());
 app.use(requestContext);
 app.use(sanitizeMiddleware);
 
+// Route prefix normalization for Vercel Services & direct routing
+app.use((req, res, next) => {
+  if (!req.url.startsWith('/api')) {
+    req.url = '/api' + (req.url.startsWith('/') ? req.url : '/' + req.url);
+  }
+  next();
+});
+
 if (process.env.NODE_ENV !== 'test') {
   app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
   app.use('/api', apiLimiter);

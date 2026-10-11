@@ -131,11 +131,12 @@ router.get('/:id/predict', predictLimiter, async (req, res, next) => {
     // Compute physics-grounded prediction & circuit proof
     const physicsPrediction = analyzeConsumerPhysics(consumer, readings);
 
-    const mlUrl = process.env.ML_SERVICE_URL || 'http://localhost:8000';
+    const mlBase = process.env.ML_SERVICE_URL || 'http://localhost:8000';
+    const mlPredictUrl = new URL('predict', mlBase.endsWith('/') ? mlBase : `${mlBase}/`);
     let prediction = physicsPrediction;
 
     try {
-      const resp = await fetch(`${mlUrl}/predict`, {
+      const resp = await fetch(mlPredictUrl, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           consumer_id:          consumer.id,

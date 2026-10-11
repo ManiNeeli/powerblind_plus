@@ -32,24 +32,26 @@ router.get('/', async (req, res) => {
     status.checks.database = { status: 'error', message: 'Database service unreachable' };
   }
 
-  // ML service connectivity check (non-blocking — just pings the ML health endpoint)
-  const mlUrl = process.env.ML_SERVICE_URL || 'http://localhost:8000';
+  // ML service connectivity check (bound via Vercel services: ML_SERVICE_URL)
+  const mlBase = process.env.ML_SERVICE_URL || 'http://localhost:8000';
+  const mlHealthUrl = new URL('health', mlBase.endsWith('/') ? mlBase : `${mlBase}/`);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 2000);
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 2000);
-    const mlRes = await fetch(`${mlUrl}/health`, { signal: controller.signal });
-    clearTimeout(timeout);
+    const mlRes = await fetch(mlHealthUrl, { signal: controller.signal });
     status.checks.mlService = {
       status: mlRes.ok ? 'ok' : 'degraded',
-      url: mlUrl,
+      url: mlBase,
     };
   } catch {
     // ML service not required for API to function (falls back to mock predictor)
     status.checks.mlService = {
       status: 'unavailable',
-      url: mlUrl,
+      url: mlBase,
       note: 'Mock predictor will be used',
     };
+  } finally {
+    clearTimeout(timeout);
   }
 
   const isHealthy = status.checks.database.status === 'ok';
