@@ -5,7 +5,7 @@ import { useBatchPredict }    from '../hooks/usePrediction';
 import { useToast }           from '../contexts/ToastContext';
 import PageShell              from '../components/layout/PageShell';
 import ExportButton           from '../components/ui/ExportButton';
-import { StatCard, SkeletonRows, ErrorAlert, Badge, EmptyState } from '../components/ui/index.jsx';
+import { StatCard, SkeletonRows, ErrorAlert, Badge, EmptyState, CopyButton } from '../components/ui/index.jsx';
 import { cn } from '../lib/utils';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
@@ -17,7 +17,7 @@ const LABEL_COLOR = { Theft:'#ff3b5c', FaultyMeter:'#f59e0b', CommFailure:'#6366
 function ChartTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="card-glass px-3.5 py-2.5 text-xs shadow-glass border border-white/10 rounded-lg">
+    <div className="card-glass px-3.5 py-2.5 text-xs shadow-glass border border-surface-border rounded-lg">
       <p className="text-ink-secondary mb-1.5 font-mono text-[11px]">{label}</p>
       {payload.map(p => (
         <div key={p.dataKey} className="flex items-center gap-2 justify-between min-w-[120px] mb-0.5">
@@ -46,10 +46,10 @@ export default function DashboardPage() {
   };
 
   const stats = [
-    { icon: AlertTriangle, label:'Theft Detected',  value: counts?.Theft?.toLocaleString(),       colorClass:'text-[#ff3b5c]'  },
-    { icon: Gauge,         label:'Faulty Meters',   value: counts?.FaultyMeter?.toLocaleString(),  colorClass:'text-[#f59e0b]'  },
-    { icon: Wifi,          label:'Comm Failures',   value: counts?.CommFailure?.toLocaleString(),  colorClass:'text-[#6366f1]'  },
-    { icon: CheckCircle,   label:'Normal',          value: counts?.Normal?.toLocaleString(),       colorClass:'text-[#10b981]'  },
+    { icon: AlertTriangle, label:'Theft Detected',  value: counts?.Theft?.toLocaleString(),       colorClass:'text-risk-theft'  },
+    { icon: Gauge,         label:'Faulty Meters',   value: counts?.FaultyMeter?.toLocaleString(),  colorClass:'text-risk-fault'  },
+    { icon: Wifi,          label:'Comm Failures',   value: counts?.CommFailure?.toLocaleString(),  colorClass:'text-risk-comm'   },
+    { icon: CheckCircle,   label:'Normal',          value: counts?.Normal?.toLocaleString(),       colorClass:'text-risk-normal' },
   ];
 
   return (
@@ -79,9 +79,9 @@ export default function DashboardPage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mb-5">
           {[
             { label:'Total Inspections',   value: inspectionStats?.total,         color:'text-ink-primary' },
-            { label:'Confirmed Anomalies', value: inspectionStats?.confirmed,     color:'text-[#ff3b5c]'   },
-            { label:'False Positives',     value: inspectionStats?.falsePositive, color:'text-[#10b981]'   },
-            { label:'Queued for Review',   value: inspectionStats?.queued,        color:'text-[#6366f1]'   },
+            { label:'Confirmed Anomalies', value: inspectionStats?.confirmed,     color:'text-risk-theft'  },
+            { label:'False Positives',     value: inspectionStats?.falsePositive, color:'text-risk-normal' },
+            { label:'Queued for Review',   value: inspectionStats?.queued,        color:'text-risk-comm'   },
           ].map(({ label, value, color }) => (
             <div key={label} className="card p-4 hover:border-surface-borderLight transition-all">
               <p className="stat-card-label">{label}</p>
@@ -115,7 +115,7 @@ export default function DashboardPage() {
                     </linearGradient>
                   ))}
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.05)" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-chart-grid)" vertical={false} />
                 <XAxis dataKey="date" tick={{ fill:'var(--color-ink-muted)', fontSize:10 }} tickLine={false} axisLine={false} tickFormatter={d => d?.slice(5)} />
                 <YAxis tick={{ fill:'var(--color-ink-muted)', fontSize:10 }} tickLine={false} axisLine={false} />
                 <Tooltip content={<ChartTooltip />} />
@@ -175,7 +175,7 @@ export default function DashboardPage() {
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto table-responsive">
           <table className="data-table" aria-label="Top risk consumers table">
             <thead>
               <tr>
@@ -194,7 +194,12 @@ export default function DashboardPage() {
                       <tr key={c.id} onClick={() => navigate(`/consumers/${c.id}`)} tabIndex={0}
                         onKeyDown={e => e.key === 'Enter' && navigate(`/consumers/${c.id}`)}
                         role="row" aria-label={`Consumer ${c.id}, ${c.groundTruthLabel}`}>
-                        <td className="font-mono text-accent text-xs font-semibold hover:underline">{c.id}</td>
+                        <td className="font-mono text-xs font-semibold">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-accent hover:underline">{c.id}</span>
+                            <CopyButton text={c.id} label={`Copy ${c.id}`} />
+                          </div>
+                        </td>
                         <td className="text-xs text-ink-secondary">{c.consumerType}</td>
                         <td><Badge label={c.groundTruthLabel} /></td>
                         <td className="text-[10px] font-mono text-ink-muted">{c.groundTruthSubtype ?? '—'}</td>
@@ -204,7 +209,7 @@ export default function DashboardPage() {
                         <td className="text-right">
                           <button
                             onClick={(e) => { e.stopPropagation(); navigate(`/consumers/${c.id}`); }}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-[#ff3b5c]/10 text-[#ff4d6d] border border-[#ff3b5c]/30 hover:bg-[#ff3b5c]/20 hover:shadow-glow-theft transition-all duration-150"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 dark:bg-[#ff3b5c]/10 dark:text-[#ff4d6d] dark:border-[#ff3b5c]/30 hover:shadow-glow-theft transition-all duration-150"
                           >
                             <ShieldAlert className="w-3 h-3" />
                             <span>Forensic Flow →</span>

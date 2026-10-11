@@ -57,7 +57,7 @@ export function Modal({ open, onClose, title, children, width = 'max-w-sm' }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md px-4"
          role="dialog" aria-modal="true" aria-labelledby="modal-title"
          onClick={onClose}>
-      <div className={cn('w-full card-glass p-6 animate-slide-up border border-white/10 shadow-glass', width)} onClick={e => e.stopPropagation()}>
+      <div className={cn('w-full card-glass p-6 animate-slide-up border border-surface-border shadow-glass', width)} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h2 id="modal-title" className="text-sm font-semibold text-ink-primary tracking-tight">{title}</h2>
           <button onClick={onClose} aria-label="Close dialog" className="text-ink-muted hover:text-ink-primary transition-colors p-1 rounded hover:bg-surface">
@@ -77,7 +77,7 @@ export function StatCard({ icon: Icon, label, value, colorClass, loading, sub })
       <div className="flex items-center justify-between gap-2">
         <span className="stat-card-label">{label}</span>
         {Icon && (
-          <div className="w-8 h-8 rounded-lg bg-surface/80 border border-surface-border flex items-center justify-center group-hover:scale-110 group-hover:border-accent/40 group-hover:bg-accent/10 transition-all duration-300">
+          <div className="w-8 h-8 rounded-lg bg-surface border border-surface-border flex items-center justify-center group-hover:scale-110 group-hover:border-accent/40 group-hover:bg-accent/10 transition-all duration-300">
             <Icon className={cn('w-4 h-4', colorClass)} aria-hidden />
           </div>
         )}
@@ -126,8 +126,8 @@ export function Input({ className, ...props }) {
 
 // ── Button ────────────────────────────────────────────────────────────────────
 const BTN = {
-  primary: 'bg-gradient-to-r from-accent to-[#00d69d] text-[#080c14] font-semibold shadow-glow-accent hover:brightness-105 active:scale-[0.98]',
-  danger:  'bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 hover:border-red-500/50',
+  primary: 'btn-primary',
+  danger:  'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/30 hover:bg-red-500/20 hover:border-red-500/50',
   ghost:   'bg-transparent text-ink-secondary border border-surface-border hover:bg-surface hover:text-ink-primary hover:border-surface-borderLight',
   accent:  'bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 hover:border-accent/50',
 };
@@ -204,3 +204,11 @@ export function Divider({ label }) {
     </div>
   );
 }
+
+export { default as CopyButton }      from './CopyButton';
+export { default as ConfirmModal }    from './ConfirmModal';
+export { default as CookieBanner }    from './CookieBanner';
+export { default as BackToTop }       from './BackToTop';
+export { default as FloatingContact } from './FloatingContact';
+export { default as ExpandableFAQ }   from './ExpandableFAQ';
+export { default as ScrollProgress }  from './ScrollProgress';

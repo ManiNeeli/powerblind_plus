@@ -5,10 +5,10 @@ import { api } from '../../lib/api';
 import { cn } from '../../lib/utils';
 
 const LABEL_META = {
-  Theft:       { icon: AlertTriangle, cls: 'text-red-400'    },
-  FaultyMeter: { icon: Gauge,         cls: 'text-amber-400'  },
-  CommFailure: { icon: Wifi,          cls: 'text-indigo-400' },
-  Normal:      { icon: Zap,           cls: 'text-green-400'  },
+  Theft:       { icon: AlertTriangle, cls: 'text-red-600 dark:text-red-400'       },
+  FaultyMeter: { icon: Gauge,         cls: 'text-amber-600 dark:text-amber-400'   },
+  CommFailure: { icon: Wifi,          cls: 'text-indigo-600 dark:text-indigo-400' },
+  Normal:      { icon: Zap,           cls: 'text-emerald-600 dark:text-emerald-400' },
 };
 
 export default function CommandPalette({ open, onClose }) {
@@ -59,7 +59,7 @@ export default function CommandPalette({ open, onClose }) {
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[14vh] px-4"
          role="dialog" aria-modal="true" aria-label="Consumer search"
          onClick={onClose}>
-      <div className="w-full max-w-xl bg-canvas-100 rounded-xl border border-surface-border shadow-card-hover animate-slide-up"
+      <div className="w-full max-w-xl bg-surface rounded-xl border border-surface-border shadow-2xl animate-slide-up"
            onClick={e => e.stopPropagation()}>
 
         {/* Input */}

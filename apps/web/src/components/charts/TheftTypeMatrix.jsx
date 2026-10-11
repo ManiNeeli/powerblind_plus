@@ -121,7 +121,7 @@ export default function TheftTypeMatrix({ consumer, prediction, readings = [] })
           <span className="w-2 h-2 rounded-full bg-current animate-ping" />
           <span>CLASSIFICATION: {activeCategory.label.toUpperCase()}</span>
           {activeSubtype && (
-            <span className="bg-black/30 px-1.5 py-0.5 rounded text-[10px] text-white">
+            <span className="bg-black/10 dark:bg-black/30 px-1.5 py-0.5 rounded text-[10px] text-ink-primary dark:text-white">
               {activeSubtype}
             </span>
           )}
@@ -144,8 +144,8 @@ export default function TheftTypeMatrix({ consumer, prediction, readings = [] })
               className={cn(
                 'relative p-3.5 rounded-xl border text-left transition-all duration-300 flex flex-col justify-between group overflow-hidden',
                 isSelected
-                  ? 'bg-surface/80 border-surface-borderLight shadow-md scale-[1.01]'
-                  : 'bg-surface/30 border-surface-border hover:bg-surface/50 hover:border-surface-borderLight'
+                  ? 'bg-surface border-surface-borderLight shadow-md scale-[1.01]'
+                  : 'bg-surface/60 border-surface-border hover:bg-surface hover:border-surface-borderLight'
               )}
               style={{
                 borderColor: isSelected ? cls.color : undefined,
@@ -155,7 +155,7 @@ export default function TheftTypeMatrix({ consumer, prediction, readings = [] })
               {/* Active neon highlight ribbon */}
               {isCurrentActive && (
                 <div
-                  className="absolute top-0 right-0 px-2 py-0.5 rounded-bl-lg text-[9px] font-mono font-extrabold uppercase tracking-wider text-canvas"
+                  className="absolute top-0 right-0 px-2 py-0.5 rounded-bl-lg text-[9px] font-mono font-extrabold uppercase tracking-wider text-white"
                   style={{ background: cls.color }}
                 >
                   Detected
@@ -289,12 +289,12 @@ export default function TheftTypeMatrix({ consumer, prediction, readings = [] })
                 {/* Meter Register Box */}
                 <rect
                   x="100" y="45" width="130" height="50" rx="6"
-                  fill="#161b22"
-                  stroke={isTheft ? '#ff3b5c' : isFault ? '#f59e0b' : '#10b981'}
+                  fill="var(--color-surface)"
+                  stroke={isTheft ? 'var(--color-risk-theft)' : isFault ? 'var(--color-risk-fault)' : 'var(--color-risk-normal)'}
                   strokeWidth="1.5"
                   className={isTheft ? 'shadow-glow-theft' : ''}
                 />
-                <text x="112" y="65" fill="#f0f6fc" fontSize="10" fontWeight="bold" fontFamily="monospace">SMART METER</text>
+                <text x="112" y="65" fill="var(--color-ink-primary)" fontSize="10" fontWeight="bold" fontFamily="monospace">SMART METER</text>
                 <text x="112" y="82" fill="var(--color-ink-muted)" fontSize="8.5" fontFamily="monospace">
                   {proof.meanKwh ? `${proof.meanKwh.toFixed(1)} kWh/d` : 'METER CT'}
                 </text>
@@ -302,14 +302,14 @@ export default function TheftTypeMatrix({ consumer, prediction, readings = [] })
                 {/* Metered Current Flow through Register */}
                 <path
                   d="M 100 70 L 230 70"
-                  stroke={isTheft ? '#8b949e' : '#10b981'}
+                  stroke={isTheft ? 'var(--color-ink-muted)' : 'var(--color-risk-normal)'}
                   strokeWidth="2.5"
                   strokeDasharray={isTheft ? '4 3' : undefined}
                 />
 
                 {/* Load Side */}
-                <path d="M 230 70 L 310 70" stroke="#00f2b2" strokeWidth="3" strokeLinecap="round" />
-                <circle cx="310" cy="70" r="4" fill="#00f2b2" />
+                <path d="M 230 70 L 310 70" stroke="var(--color-accent)" strokeWidth="3" strokeLinecap="round" />
+                <circle cx="310" cy="70" r="4" fill="var(--color-accent)" />
                 <text x="280" y="55" fill="var(--color-ink-muted)" fontSize="9" fontFamily="monospace">LOAD</text>
 
                 {/* Unmetered Bypass Shunt Circuit (Active only if Theft) */}
@@ -332,7 +332,7 @@ export default function TheftTypeMatrix({ consumer, prediction, readings = [] })
                 ) : (
                   <path
                     d="M 80 70 L 80 25 L 250 25 L 250 70"
-                    stroke="rgba(255, 255, 255, 0.08)"
+                    stroke="var(--color-surface-border)"
                     strokeWidth="1"
                     strokeDasharray="2 4"
                   />
@@ -347,9 +347,9 @@ export default function TheftTypeMatrix({ consumer, prediction, readings = [] })
                 <span
                   className="font-bold text-[10px] px-2 py-0.5 rounded border"
                   style={{
-                    background: isTheft ? 'rgba(255,59,92,0.15)' : 'rgba(16,185,129,0.15)',
-                    borderColor: isTheft ? 'rgba(255,59,92,0.3)' : 'rgba(16,185,129,0.3)',
-                    color: isTheft ? '#ff4d6d' : '#34d399',
+                    background: isTheft ? 'var(--color-risk-theft-muted)' : 'var(--color-risk-normal-muted)',
+                    borderColor: isTheft ? 'var(--color-risk-theft-glow)' : 'var(--color-risk-normal-glow)',
+                    color: isTheft ? 'var(--color-risk-theft)' : 'var(--color-risk-normal)',
                   }}
                 >
                   {proof.kclCircuitState ?? (isTheft ? 'VIOLATION_SHUNT_FLOW' : 'VERIFIED_BALANCED')}
@@ -368,10 +368,10 @@ export default function TheftTypeMatrix({ consumer, prediction, readings = [] })
                 </div>
                 <div className="flex justify-between">
                   <span className="text-ink-muted">Active Feeder Voltage:</span>
-                  <span className="text-[#3b82f6] font-bold">{proof.meanVoltage ? `${proof.meanVoltage.toFixed(1)} V (OK)` : '230.0 V'}</span>
+                  <span className="text-blue-600 dark:text-[#3b82f6] font-bold">{proof.meanVoltage ? `${proof.meanVoltage.toFixed(1)} V (OK)` : '230.0 V'}</span>
                 </div>
                 {isTheft && (
-                  <div className="flex justify-between pt-1 border-t border-surface-border/70 text-[#ff4d6d] font-bold">
+                  <div className="flex justify-between pt-1 border-t border-surface-border/70 text-red-600 dark:text-[#ff4d6d] font-bold">
                     <span>Unmetered Shunt Flow:</span>
                     <span>~{proof.unmeteredDailyKwh?.toFixed(1) ?? '—'} kWh/d</span>
                   </div>

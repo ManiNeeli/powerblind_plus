@@ -56,6 +56,8 @@ services:
     environment:
       NODE_ENV:        production
       PORT:            4000
+      MONGODB_URI:     mongodb://mongo:27017/powerblind
+      MONGODB_DB_NAME: powerblind
       DATABASE_URL:    file:/data/powerblind.db
       ML_SERVICE_URL:  http://ml:8000
       CORS_ORIGINS:    http://localhost,http://web
@@ -64,6 +66,8 @@ services:
     expose:
       - "4000"
     depends_on:
+      mongo:
+        condition: service_healthy
       ml:
         condition: service_healthy
     restart: unless-stopped
@@ -76,6 +80,25 @@ services:
       timeout: 8s
       retries: 3
       start_period: 15s
+
+  # ── MongoDB (Local Persistence & Compass Compatible) ──────────────────────
+  mongo:
+    image: mongo:7-jammy
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: powerblind
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   # ── ML microservice (FastAPI) ───────────────────────────────────────────────
   ml:
@@ -123,6 +146,8 @@ services:
       - backend
 
 volumes:
+  mongo-data:
+    driver: local
   db-data:
     driver: local
   ml-models:

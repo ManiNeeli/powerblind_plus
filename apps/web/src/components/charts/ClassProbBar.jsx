@@ -4,10 +4,10 @@ import React from 'react';
  * Horizontal stacked bar showing multi-class probability breakdown with smooth animations.
  */
 const COLORS = {
-  Theft:       { bg: '#ff3b5c', glow: 'rgba(255, 59, 92, 0.4)' },
-  FaultyMeter: { bg: '#f59e0b', glow: 'rgba(245, 158, 11, 0.4)' },
-  CommFailure: { bg: '#6366f1', glow: 'rgba(99, 102, 241, 0.4)' },
-  Normal:      { bg: '#10b981', glow: 'rgba(16, 185, 129, 0.4)' },
+  Theft:       { bg: 'var(--color-risk-theft)', glow: 'var(--color-risk-theft-glow)' },
+  FaultyMeter: { bg: 'var(--color-risk-fault)', glow: 'var(--color-risk-fault-glow)' },
+  CommFailure: { bg: 'var(--color-risk-comm)',  glow: 'var(--color-risk-comm-glow)' },
+  Normal:      { bg: 'var(--color-risk-normal)', glow: 'var(--color-risk-normal-glow)' },
 };
 
 const ORDER = ['Theft', 'FaultyMeter', 'CommFailure', 'Normal'];
@@ -60,7 +60,7 @@ export default function ClassProbBar({ probabilities = {} }) {
               className={`flex items-center justify-between px-2.5 py-1 rounded-lg border transition-all duration-200 ${
                 isDominant
                   ? 'bg-surface border-surface-borderLight shadow-sm'
-                  : 'bg-surface/30 border-surface-border/60 opacity-80'
+                  : 'bg-surface/60 border-surface-border opacity-90'
               }`}
             >
               <div className="flex items-center gap-1.5 min-w-0">

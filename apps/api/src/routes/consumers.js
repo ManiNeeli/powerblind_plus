@@ -79,10 +79,16 @@ router.get('/:id/timeseries', async (req, res, next) => {
       select: { date:true, kwh:true, voltageV:true, currentA:true, powerFactor:true, commFlag:true, label:true, anomalySubtype:true },
     });
 
+    const toDateStr = (d) => {
+      if (!d) return '';
+      if (d instanceof Date) return d.toISOString().slice(0, 10);
+      try { return new Date(d).toISOString().slice(0, 10); } catch { return String(d).slice(0, 10); }
+    };
+
     res.json({
       consumerId: req.params.id,
       readings: readings.map(r => ({
-        date:          r.date.toISOString().slice(0,10),
+        date:          toDateStr(r.date),
         kwh:           r.kwh,
         voltageV:      r.voltageV,
         currentA:      r.currentA,

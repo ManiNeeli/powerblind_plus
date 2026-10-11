@@ -22,7 +22,7 @@ const THEFT_TAXONOMY = {
       'Inspect physical security seals on the meter terminal cover for cuts or glue',
     ],
     severity: 'High Severity',
-    badgeCls: 'bg-[#ff3b5c]/15 text-[#ff4d6d] border-[#ff3b5c]/30',
+    badgeCls: 'bg-red-50 text-red-700 border-red-200 dark:bg-[#ff3b5c]/15 dark:text-[#ff4d6d] dark:border-[#ff3b5c]/30',
   },
   T2_ZeroConsumption: {
     name: 'Complete Meter Bypass (Zero Registration)',
@@ -35,7 +35,7 @@ const THEFT_TAXONOMY = {
       'Use thermal camera on service drop to identify unauthorized heat signatures of hidden bypass',
     ],
     severity: 'Critical Severity',
-    badgeCls: 'bg-[#ff3b5c]/15 text-[#ff4d6d] border-[#ff3b5c]/30',
+    badgeCls: 'bg-red-50 text-red-700 border-red-200 dark:bg-[#ff3b5c]/15 dark:text-[#ff4d6d] dark:border-[#ff3b5c]/30',
   },
   T3_RandomReduction: {
     name: 'Intermittent / Selective Tampering',
@@ -48,7 +48,7 @@ const THEFT_TAXONOMY = {
       'Review high-frequency 15-minute interval logs to locate exact switching transitions',
     ],
     severity: 'High Severity',
-    badgeCls: 'bg-[#ff3b5c]/15 text-[#ff4d6d] border-[#ff3b5c]/30',
+    badgeCls: 'bg-red-50 text-red-700 border-red-200 dark:bg-[#ff3b5c]/15 dark:text-[#ff4d6d] dark:border-[#ff3b5c]/30',
   },
   T4_ByPassMeter: {
     name: 'Clamped Low Baseline Bypass',
@@ -61,7 +61,7 @@ const THEFT_TAXONOMY = {
       'Check internal shunt calibration screws for soldering burns or foreign flux residues',
     ],
     severity: 'Critical Severity',
-    badgeCls: 'bg-[#ff3b5c]/15 text-[#ff4d6d] border-[#ff3b5c]/30',
+    badgeCls: 'bg-red-50 text-red-700 border-red-200 dark:bg-[#ff3b5c]/15 dark:text-[#ff4d6d] dark:border-[#ff3b5c]/30',
   },
   T5_ReverseTamper: {
     name: 'Phase Inversion / Reverse Current Tampering',
@@ -74,7 +74,7 @@ const THEFT_TAXONOMY = {
       'Inspect terminal wiring for phase cross-connection at the main circuit breaker',
     ],
     severity: 'High Severity',
-    badgeCls: 'bg-[#ff3b5c]/15 text-[#ff4d6d] border-[#ff3b5c]/30',
+    badgeCls: 'bg-red-50 text-red-700 border-red-200 dark:bg-[#ff3b5c]/15 dark:text-[#ff4d6d] dark:border-[#ff3b5c]/30',
   },
 };
 
@@ -89,14 +89,14 @@ const DEFAULT_ATTACK = {
     'Interview consumer regarding load alterations or appliance status',
   ],
   severity: 'High Severity',
-  badgeCls: 'bg-[#ff3b5c]/15 text-[#ff4d6d] border-[#ff3b5c]/30',
+  badgeCls: 'bg-red-50 text-red-700 border-red-200 dark:bg-[#ff3b5c]/15 dark:text-[#ff4d6d] dark:border-[#ff3b5c]/30',
 };
 
 // Custom chart tooltip
 function ForensicChartTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="card-glass px-4 py-3 text-xs shadow-glass border border-white/15 rounded-xl min-w-[200px] backdrop-blur-xl">
+    <div className="card-glass px-4 py-3 text-xs shadow-glass border border-surface-border rounded-xl min-w-[200px] backdrop-blur-xl">
       <p className="text-ink-secondary mb-2 font-mono text-[11px] pb-1 border-b border-surface-border">
         Date: <span className="text-ink-primary font-bold">{label}</span>
       </p>
@@ -207,7 +207,7 @@ export default function TheftForensicFlow({ consumer, readings = [], prediction 
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-surface-border/70">
         <div>
           <div className="flex items-center gap-2.5 mb-1.5 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold font-mono bg-theft-muted text-[#ff4d6d] border border-[#ff3b5c]/30 shadow-glow-theft">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold font-mono bg-red-50 text-red-700 border border-red-200 dark:bg-theft-muted dark:text-[#ff4d6d] dark:border-[#ff3b5c]/30 shadow-glow-theft">
               <ShieldAlert className="w-3.5 h-3.5" />
               FORENSIC THEFT RECONSTRUCTION
             </span>
@@ -227,7 +227,7 @@ export default function TheftForensicFlow({ consumer, readings = [], prediction 
         <div className="flex items-center gap-3 shrink-0">
           <div className="px-3.5 py-2 rounded-xl bg-surface/80 border border-surface-border text-center">
             <p className="text-[10px] uppercase font-bold text-ink-muted">Recorded Drop</p>
-            <p className="text-base font-extrabold font-mono text-[#ff4d6d]">-{forensicStats.dropPercent}%</p>
+            <p className="text-base font-extrabold font-mono text-red-600 dark:text-[#ff4d6d]">-{forensicStats.dropPercent}%</p>
           </div>
           <div className="px-3.5 py-2 rounded-xl bg-surface/80 border border-surface-border text-center">
             <p className="text-[10px] uppercase font-bold text-ink-muted">Stolen Energy</p>
@@ -235,7 +235,7 @@ export default function TheftForensicFlow({ consumer, readings = [], prediction 
           </div>
           <div className="px-3.5 py-2 rounded-xl bg-surface/80 border border-surface-border text-center">
             <p className="text-[10px] uppercase font-bold text-ink-muted">Revenue Loss</p>
-            <p className="text-base font-extrabold font-mono text-[#fbbf24]">${forensicStats.totalRevenueLoss}</p>
+            <p className="text-base font-extrabold font-mono text-amber-600 dark:text-[#fbbf24]">${forensicStats.totalRevenueLoss}</p>
           </div>
         </div>
       </div>
@@ -257,7 +257,7 @@ export default function TheftForensicFlow({ consumer, readings = [], prediction 
               title: 'Normal Baseline',
               sub: `Pre-Tamper (${forensicStats.preMeanKwh} kWh/d)`,
               desc: `Consumer maintained normal usage. Line current averaged ${forensicStats.preMeanCurrent}A with valid power factor.`,
-              color: 'border-[#10b981]/40 bg-[#10b981]/5 text-[#34d399]',
+              color: 'border-emerald-300 dark:border-[#10b981]/40 bg-emerald-50 dark:bg-[#10b981]/5 text-emerald-700 dark:text-[#34d399]',
               icon: CheckCircle2,
             },
             {
@@ -265,7 +265,7 @@ export default function TheftForensicFlow({ consumer, readings = [], prediction 
               title: 'Tamper Executed',
               sub: anomalyStart ? `Event: ${anomalyStart}` : 'Tampering Onset',
               desc: `Physical bypass or shunt installed. Registered current plunged from ${forensicStats.preMeanCurrent}A to ${forensicStats.anomMeanCurrent}A.`,
-              color: 'border-[#ff3b5c]/40 bg-[#ff3b5c]/10 text-[#ff4d6d]',
+              color: 'border-red-300 dark:border-[#ff3b5c]/40 bg-red-50 dark:bg-[#ff3b5c]/10 text-red-700 dark:text-[#ff4d6d]',
               icon: Zap,
             },
             {
@@ -273,7 +273,7 @@ export default function TheftForensicFlow({ consumer, readings = [], prediction 
               title: 'Divergence Window',
               sub: `${forensicStats.durationDays} Days Active Theft`,
               desc: `Apparent kWh collapsed by ${forensicStats.dropPercent}%. Energy continues powering premises without spinning meter.`,
-              color: 'border-[#f59e0b]/40 bg-[#f59e0b]/10 text-[#fbbf24]',
+              color: 'border-amber-300 dark:border-[#f59e0b]/40 bg-amber-50 dark:bg-[#f59e0b]/10 text-amber-800 dark:text-[#fbbf24]',
               icon: TrendingDown,
             },
             {
@@ -289,7 +289,7 @@ export default function TheftForensicFlow({ consumer, readings = [], prediction 
               title: 'Inspection Dispatch',
               sub: 'Evidence Pack Ready',
               desc: 'Utility crew dispatches with tamper evidence checklist, estimated loss bill, and targeted terminal inspection.',
-              color: 'border-[#6366f1]/40 bg-[#6366f1]/10 text-[#818cf8]',
+              color: 'border-indigo-300 dark:border-[#6366f1]/40 bg-indigo-50 dark:bg-[#6366f1]/10 text-indigo-700 dark:text-[#818cf8]',
               icon: Wrench,
             },
           ].map((s) => {
@@ -412,7 +412,7 @@ export default function TheftForensicFlow({ consumer, readings = [], prediction 
                     <stop offset="95%" stopColor="#ff3b5c" stopOpacity={0.1} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-chart-grid)" vertical={false} />
                 <XAxis dataKey="date" tick={{ fill: 'var(--color-ink-muted)', fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={(d) => d?.slice(5)} />
                 <YAxis tick={{ fill: 'var(--color-ink-muted)', fontSize: 10 }} tickLine={false} axisLine={false} />
                 <Tooltip content={<ForensicChartTooltip />} />

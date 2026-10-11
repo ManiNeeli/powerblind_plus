@@ -10,8 +10,8 @@ export default function XAIWaterfall({ features = [], label = 'Unknown', classNa
   const maxImpact = Math.max(...features.map(f => Math.abs(f.impact)));
 
   const COLORS = {
-    positive: { bar: '#ef4444', bg: 'rgba(239,68,68,0.12)',  text: '#ef4444'  },
-    negative: { bar: '#22c55e', bg: 'rgba(34,197,94,0.12)',  text: '#22c55e'  },
+    positive: { bar: 'var(--color-risk-theft)', bg: 'var(--color-risk-theft-muted)',  text: 'var(--color-risk-theft)'  },
+    negative: { bar: 'var(--color-risk-normal)', bg: 'var(--color-risk-normal-muted)',  text: 'var(--color-risk-normal)'  },
   };
 
   return (
@@ -36,7 +36,7 @@ export default function XAIWaterfall({ features = [], label = 'Unknown', classNa
                   </span>
                 )}
               </div>
-              <span className={cn('text-xs font-mono font-bold ml-3 shrink-0', colors.text)}>
+              <span className="text-xs font-mono font-bold ml-3 shrink-0" style={{ color: colors.text }}>
                 {sign}{(Math.abs(f.impact) * 100).toFixed(0)}%
               </span>
             </div>

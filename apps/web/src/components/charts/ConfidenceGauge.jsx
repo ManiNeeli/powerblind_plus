@@ -2,10 +2,10 @@ import React from 'react';
 import { cn } from '../../lib/utils';
 
 const LABEL_COLORS = {
-  Theft:       { stroke: '#ff3b5c', text: '#ff3b5c', bg: 'rgba(255, 59, 92, 0.15)', glow: 'rgba(255, 59, 92, 0.4)' },
-  FaultyMeter: { stroke: '#f59e0b', text: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)', glow: 'rgba(245, 158, 11, 0.4)' },
-  CommFailure: { stroke: '#6366f1', text: '#6366f1', bg: 'rgba(99, 102, 241, 0.15)', glow: 'rgba(99, 102, 241, 0.4)' },
-  Normal:      { stroke: '#10b981', text: '#10b981', bg: 'rgba(16, 185, 129, 0.15)', glow: 'rgba(16, 185, 129, 0.4)' },
+  Theft:       { stroke: 'var(--color-risk-theft)', text: 'var(--color-risk-theft)', bg: 'var(--color-risk-theft-muted)', glow: 'var(--color-risk-theft-glow)' },
+  FaultyMeter: { stroke: 'var(--color-risk-fault)', text: 'var(--color-risk-fault)', bg: 'var(--color-risk-fault-muted)', glow: 'var(--color-risk-fault-glow)' },
+  CommFailure: { stroke: 'var(--color-risk-comm)',  text: 'var(--color-risk-comm)',  bg: 'var(--color-risk-comm-muted)',  glow: 'var(--color-risk-comm-glow)' },
+  Normal:      { stroke: 'var(--color-risk-normal)', text: 'var(--color-risk-normal)', bg: 'var(--color-risk-normal-muted)', glow: 'var(--color-risk-normal-glow)' },
 };
 
 /**
@@ -47,7 +47,7 @@ export default function ConfidenceGauge({ confidence = 0, label = 'Normal', size
           {/* Background Track */}
           <circle
             cx={cx} cy={cy} r={radius}
-            fill="none" stroke="rgba(255, 255, 255, 0.07)" strokeWidth={stroke}
+            fill="none" stroke="var(--color-surface-border, rgba(0, 0, 0, 0.08))" strokeWidth={stroke}
             strokeDasharray={`${arcLen} ${circumf - arcLen}`}
             strokeDashoffset={circumf * 0.125}
             strokeLinecap="round"

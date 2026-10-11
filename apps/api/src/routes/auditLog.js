@@ -30,16 +30,24 @@ router.get('/', async (req, res, next) => {
       prisma.auditLog.count({ where }),
     ]);
 
-    const shaped = logs.map(l => ({
-      id:        l.id,
-      action:    l.action,
-      actorId:   l.actorId,
-      actorEmail: l.actor?.email ?? null,
-      actorRole:  l.actor?.role  ?? null,
-      metadata:  l.metadata ? JSON.parse(l.metadata) : null,
-      ip:        l.ip,
-      createdAt: l.createdAt,
-    }));
+    const shaped = logs.map(l => {
+      let parsedMeta = null;
+      if (typeof l.metadata === 'string') {
+        try { parsedMeta = JSON.parse(l.metadata); } catch { parsedMeta = l.metadata; }
+      } else if (l.metadata && typeof l.metadata === 'object') {
+        parsedMeta = l.metadata;
+      }
+      return {
+        id:         l.id,
+        action:     l.action,
+        actorId:    l.actorId,
+        actorEmail: l.actor?.email ?? null,
+        actorRole:  l.actor?.role  ?? null,
+        metadata:   parsedMeta,
+        ip:         l.ip,
+        createdAt:  l.createdAt,
+      };
+    });
 
     res.json({ logs: shaped, total, page, limit });
   } catch (err) { next(err); }

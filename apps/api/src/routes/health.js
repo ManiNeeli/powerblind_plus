@@ -23,10 +23,13 @@ router.get('/', async (req, res) => {
   // Database connectivity check
   try {
     const prisma = getPrismaClient();
-    await prisma.$queryRaw`SELECT 1`;
-    status.checks.database = { status: 'ok' };
+    if (prisma.$queryRaw) {
+      await prisma.$queryRaw`SELECT 1`;
+    }
+    status.checks.database = { status: 'ok', engine: prisma.isMongo ? 'mongodb' : 'prisma' };
   } catch (err) {
-    status.checks.database = { status: 'error', message: err.message };
+    // Sanitize: never leak internal DB error strings or credentials
+    status.checks.database = { status: 'error', message: 'Database service unreachable' };
   }
 
   // ML service connectivity check (non-blocking — just pings the ML health endpoint)

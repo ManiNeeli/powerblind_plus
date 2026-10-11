@@ -11,8 +11,8 @@ export class ErrorBoundary extends Component {
     return (
       <div className="min-h-screen bg-canvas flex items-center justify-center px-4" role="alert">
         <div className="card p-8 max-w-md w-full text-center space-y-4">
-          <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mx-auto">
-            <AlertTriangle className="w-6 h-6 text-red-400" aria-hidden />
+          <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 flex items-center justify-center mx-auto">
+            <AlertTriangle className="w-6 h-6 text-red-700 dark:text-red-400" aria-hidden />
           </div>
           <h1 className="text-base font-semibold text-ink-primary">Something went wrong</h1>
           <p className="text-sm text-ink-secondary">

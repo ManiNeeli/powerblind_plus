@@ -3,7 +3,7 @@ import { CheckCircle, XCircle, Clock, ClipboardList } from 'lucide-react';
 import { useInspections }  from '../hooks/useInspections';
 import PageShell           from '../components/layout/PageShell';
 import ExportButton        from '../components/ui/ExportButton';
-import { Badge, SkeletonRows, ErrorAlert, EmptyState, Pagination } from '../components/ui/index.jsx';
+import { Badge, SkeletonRows, ErrorAlert, EmptyState, Pagination, CopyButton } from '../components/ui/index.jsx';
 import { cn } from '../lib/utils';
 
 const STATUS_META = {
@@ -54,7 +54,7 @@ export default function InspectionsPage() {
       <ErrorAlert message={error} className="mb-4" />
 
       <section aria-label="Inspections table" className="card overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto table-responsive">
           <table className="data-table" aria-label="Inspection decisions">
             <thead>
               <tr>
@@ -87,7 +87,12 @@ export default function InspectionsPage() {
                           onClick={() => navigate(`/consumers/${ins.consumerId}`)}
                           onKeyDown={e => e.key === 'Enter' && navigate(`/consumers/${ins.consumerId}`)}
                           tabIndex={0} role="row">
-                          <td className="font-mono text-accent text-xs font-semibold hover:underline">{ins.consumer?.id}</td>
+                          <td className="font-mono text-xs font-semibold">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-accent hover:underline">{ins.consumer?.id}</span>
+                              {ins.consumer?.id && <CopyButton text={ins.consumer?.id} label={`Copy ${ins.consumer?.id}`} />}
+                            </div>
+                          </td>
                           <td className="text-xs text-ink-secondary hidden sm:table-cell">{ins.consumer?.consumerType}</td>
                           <td><Badge label={ins.consumer?.groundTruthLabel} /></td>
                           <td>

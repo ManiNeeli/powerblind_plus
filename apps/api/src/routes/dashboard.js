@@ -77,6 +77,12 @@ router.get('/summary', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+function safeDate(val) {
+  if (!val) return null;
+  if (val instanceof Date) return val.toISOString().slice(0, 10);
+  try { return new Date(val).toISOString().slice(0, 10); } catch { return String(val).slice(0, 10); }
+}
+
 function build30DayTrend(anomalyConsumers = [], recentPredictions = []) {
   const now = new Date();
   const days2023 = [];
@@ -91,9 +97,11 @@ function build30DayTrend(anomalyConsumers = [], recentPredictions = []) {
   // Pre-index recent predictions by day
   const predCountsByDay = {};
   for (const p of recentPredictions) {
-    const pDate = p.createdAt.toISOString().slice(0, 10);
-    if (!predCountsByDay[pDate]) predCountsByDay[pDate] = {};
-    predCountsByDay[pDate][p.predictedLabel] = (predCountsByDay[pDate][p.predictedLabel] || 0) + 1;
+    const pDate = safeDate(p.createdAt);
+    if (pDate) {
+      if (!predCountsByDay[pDate]) predCountsByDay[pDate] = {};
+      predCountsByDay[pDate][p.predictedLabel] = (predCountsByDay[pDate][p.predictedLabel] || 0) + 1;
+    }
   }
 
   return days2023.map((dStr, idx) => {
@@ -111,8 +119,8 @@ function build30DayTrend(anomalyConsumers = [], recentPredictions = []) {
 
     // 1. Telemetry anomalies active on this day of the monitoring window
     for (const c of anomalyConsumers) {
-      const s = c.anomalyStartDate?.toISOString().slice(0, 10);
-      const e = c.anomalyEndDate?.toISOString().slice(0, 10);
+      const s = safeDate(c.anomalyStartDate);
+      const e = safeDate(c.anomalyEndDate);
       if (s && e && dStr >= s && dStr <= e) {
         point[c.groundTruthLabel] = (point[c.groundTruthLabel] || 0) + 1;
       }

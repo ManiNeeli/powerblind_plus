@@ -24,6 +24,12 @@ packages/db/.env
 packages/db/prisma/*.db*
 *.zip
 
+# Generated Documents & Scratch files — Do not commit
+*.pdf
+*.docx
+*.doc
+scratch/
+
 # Python
 __pycache__/
 *.py[cod]

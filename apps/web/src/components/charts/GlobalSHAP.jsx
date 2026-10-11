@@ -2,7 +2,12 @@ import { useState } from 'react';
 import { useApi } from '../../hooks/useApi';
 import { Skeleton, ErrorAlert } from '../ui/index.jsx';
 
-const CLASS_COLORS = { Normal:'#22c55e', Theft:'#ef4444', FaultyMeter:'#f59e0b', CommFailure:'#6366f1' };
+const CLASS_COLORS = {
+  Normal:      'var(--color-risk-normal)',
+  Theft:       'var(--color-risk-theft)',
+  FaultyMeter: 'var(--color-risk-fault)',
+  CommFailure: 'var(--color-risk-comm)',
+};
 const CLASSES = ['Normal','Theft','FaultyMeter','CommFailure'];
 
 /**

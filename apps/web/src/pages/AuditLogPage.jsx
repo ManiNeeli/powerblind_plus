@@ -6,12 +6,19 @@ import { SkeletonRows, ErrorAlert, EmptyState, Pagination } from '../components/
 import { cn } from '../lib/utils';
 
 const ACTION_COLOR = {
-  LOGIN_SUCCESS:'text-green-400', LOGIN_FAILED:'text-red-400', ACCOUNT_LOCKED:'text-amber-400',
-  LOGOUT:'text-ink-secondary', USER_CREATED:'text-accent', ROLE_CHANGED:'text-amber-400',
-  INSPECTION_LOGGED:'text-indigo-400', PASSWORD_CHANGED:'text-amber-400',
-  MODEL_RETRAIN_TRIGGERED:'text-accent', ACCOUNT_UNLOCKED:'text-green-400',
-  USER_DELETED:'text-red-400', MODEL_VERSION_SEEDED:'text-accent',
-  MODEL_VERSION_ACTIVATED:'text-accent',
+  LOGIN_SUCCESS:           'text-emerald-700 dark:text-green-400',
+  LOGIN_FAILED:            'text-red-700 dark:text-red-400',
+  ACCOUNT_LOCKED:          'text-amber-800 dark:text-amber-400',
+  LOGOUT:                  'text-ink-secondary',
+  USER_CREATED:            'text-accent',
+  ROLE_CHANGED:            'text-amber-800 dark:text-amber-400',
+  INSPECTION_LOGGED:       'text-indigo-700 dark:text-indigo-400',
+  PASSWORD_CHANGED:        'text-amber-800 dark:text-amber-400',
+  MODEL_RETRAIN_TRIGGERED: 'text-accent',
+  ACCOUNT_UNLOCKED:        'text-emerald-700 dark:text-green-400',
+  USER_DELETED:            'text-red-700 dark:text-red-400',
+  MODEL_VERSION_SEEDED:    'text-accent',
+  MODEL_VERSION_ACTIVATED: 'text-accent',
 };
 const LIMIT = 50;
 
@@ -27,7 +34,7 @@ export default function AuditLogPage() {
       <ErrorAlert message={error} className="mb-4" />
 
       <section aria-label="Audit log table" className="card overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto table-responsive">
           <table className="data-table" aria-label="System audit events">
             <thead>
               <tr>

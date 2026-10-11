@@ -1,9 +1,30 @@
 const express = require('express');
 const { getPrismaClient } = require('@powerblind/db');
-const { requireAuth }     = require('../middleware/auth');
+const { requireAuth, requireRole } = require('../middleware/auth');
+const { audit } = require('../lib/audit');
 
 const router = express.Router();
-router.use(requireAuth);
+router.use(requireAuth, requireRole('OPERATOR', 'ADMIN'));
+
+function safeDateStr(val) {
+  if (!val) return '';
+  if (val instanceof Date) return val.toISOString().slice(0, 10);
+  try {
+    return new Date(val).toISOString().slice(0, 10);
+  } catch {
+    return String(val).slice(0, 10);
+  }
+}
+
+function safeDateTimeStr(val) {
+  if (!val) return '';
+  if (val instanceof Date) return val.toISOString();
+  try {
+    return new Date(val).toISOString();
+  } catch {
+    return String(val);
+  }
+}
 
 function toCSV(rows, headers) {
   const escape = (v) => {
@@ -34,8 +55,8 @@ router.get('/consumers', async (req, res, next) => {
       base_kwh:             c.baseKwh ?? '',
       ground_truth_label:   c.groundTruthLabel ?? '',
       ground_truth_subtype: c.groundTruthSubtype ?? '',
-      anomaly_start_date:   c.anomalyStartDate?.toISOString().slice(0,10) ?? '',
-      anomaly_end_date:     c.anomalyEndDate?.toISOString().slice(0,10) ?? '',
+      anomaly_start_date:   safeDateStr(c.anomalyStartDate),
+      anomaly_end_date:     safeDateStr(c.anomalyEndDate),
       anomaly_start_day:    c.anomalyStartDay ?? '',
       anomaly_end_day:      c.anomalyEndDay   ?? '',
       latest_prediction:    c.predictions[0]?.predictedLabel   ?? '',
@@ -50,6 +71,8 @@ router.get('/consumers', async (req, res, next) => {
       'anomaly_start_day','anomaly_end_day',
       'latest_prediction','latest_confidence','latest_model',
     ];
+
+    await audit(req.user.sub, 'DATA_EXPORT_CONSUMERS', { count: rows.length, filter: label || 'ALL' }, req);
 
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename="powerblind-consumers-${Date.now()}.csv"`);
@@ -77,7 +100,7 @@ router.get('/predictions', async (req, res, next) => {
       confidence:        p.confidence,
       model_version:     p.modelVersion,
       source:            p.source,
-      created_at:        p.createdAt.toISOString(),
+      created_at:        safeDateTimeStr(p.createdAt),
     }));
 
     const headers = [
@@ -85,6 +108,8 @@ router.get('/predictions', async (req, res, next) => {
       'predicted_label','predicted_subtype','confidence',
       'model_version','source','created_at',
     ];
+
+    await audit(req.user.sub, 'DATA_EXPORT_PREDICTIONS', { count: rows.length }, req);
 
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename="powerblind-predictions-${Date.now()}.csv"`);
@@ -113,7 +138,7 @@ router.get('/inspections', async (req, res, next) => {
       status:             i.status,
       notes:              i.notes ?? '',
       operator_email:     i.operator?.email ?? '',
-      created_at:         i.createdAt.toISOString(),
+      created_at:         safeDateTimeStr(i.createdAt),
     }));
 
     const headers = [
@@ -121,6 +146,8 @@ router.get('/inspections', async (req, res, next) => {
       'ground_truth_label','ground_truth_subtype',
       'status','notes','operator_email','created_at',
     ];
+
+    await audit(req.user.sub, 'DATA_EXPORT_INSPECTIONS', { count: rows.length }, req);
 
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename="powerblind-inspections-${Date.now()}.csv"`);

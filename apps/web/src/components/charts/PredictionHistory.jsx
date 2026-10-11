@@ -1,7 +1,12 @@
 import { cn } from '../../lib/utils';
 import { Badge } from '../ui/index.jsx';
 
-const LABEL_HEX = { Theft:'#ef4444', FaultyMeter:'#f59e0b', CommFailure:'#6366f1', Normal:'#22c55e' };
+const LABEL_HEX = {
+  Theft:       'var(--color-risk-theft)',
+  FaultyMeter: 'var(--color-risk-fault)',
+  CommFailure: 'var(--color-risk-comm)',
+  Normal:      'var(--color-risk-normal)',
+};
 
 /**
  * Timeline of past predictions for a consumer.

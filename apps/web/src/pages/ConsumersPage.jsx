@@ -5,7 +5,7 @@ import { useBatchPredict } from '../hooks/usePrediction';
 import { useToast }        from '../contexts/ToastContext';
 import PageShell           from '../components/layout/PageShell';
 import ExportButton        from '../components/ui/ExportButton';
-import { Badge, SkeletonRows, ErrorAlert, EmptyState, Pagination } from '../components/ui/index.jsx';
+import { Badge, SkeletonRows, ErrorAlert, EmptyState, Pagination, CopyButton } from '../components/ui/index.jsx';
 import { cn } from '../lib/utils';
 
 const LABELS = ['All','Theft','FaultyMeter','CommFailure','Normal'];
@@ -103,7 +103,7 @@ export default function ConsumersPage() {
       <ErrorAlert message={error} className="mb-4" />
 
       <section aria-label="Consumers table" className="card overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto table-responsive">
           <table className="data-table" aria-label="Consumers list">
             <thead>
               <tr>
@@ -134,7 +134,12 @@ export default function ConsumersPage() {
                         onKeyDown={e => e.key === 'Enter' && navigate(`/consumers/${c.id}`)}
                         tabIndex={0} role="row"
                         aria-label={`Consumer ${c.id}, ${c.groundTruthLabel ?? 'unknown class'}`}>
-                        <td className="font-mono text-accent text-xs font-semibold hover:underline">{c.id}</td>
+                        <td className="font-mono text-xs font-semibold">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-accent hover:underline">{c.id}</span>
+                            <CopyButton text={c.id} label={`Copy ${c.id}`} />
+                          </div>
+                        </td>
                         <td className="text-xs text-ink-secondary">{c.consumerType}</td>
                         <td><Badge label={c.groundTruthLabel} /></td>
                         <td className="font-mono text-[10px] text-ink-muted hidden sm:table-cell">{c.groundTruthSubtype ?? '—'}</td>

@@ -18,6 +18,7 @@
     "db:generate": "npm run generate -w packages/db",
     "db:migrate": "npm run migrate -w packages/db",
     "db:seed": "npm run seed -w packages/db",
+    "db:seed:mongo": "node packages/db/seed/seed_mongo.js",
     "db:reset": "npm run reset -w packages/db"
   },
   "devDependencies": {}

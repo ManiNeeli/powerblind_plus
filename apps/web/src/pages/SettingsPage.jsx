@@ -1,12 +1,12 @@
 import { useState, useId } from 'react';
-import { Eye, EyeOff, CheckCircle, AlertCircle, Loader2, Sun, Moon, Monitor } from 'lucide-react';
+import { Eye, EyeOff, CheckCircle, AlertCircle, Loader2, Sun, Moon, Monitor, Phone, Mail, HelpCircle, Shield } from 'lucide-react';
 import { useAuth }  from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useToast } from '../contexts/ToastContext';
 import { useMutation } from '../hooks/useApi';
 import { api }         from '../lib/api';
 import PageShell       from '../components/layout/PageShell';
-import { Badge, FormField, Input, Divider } from '../components/ui/index.jsx';
+import { Badge, FormField, Input, Divider, ExpandableFAQ, CopyButton } from '../components/ui/index.jsx';
 import { cn } from '../lib/utils';
 
 function PasswordField({ id, label, value, onChange, show, onToggle, hint }) {
@@ -120,14 +120,14 @@ export default function SettingsPage() {
           </h2>
 
           {success && (
-            <div role="status" className="mb-4 flex items-center gap-2 text-xs text-green-400 bg-green-500/10 border border-green-500/20 rounded-md px-3 py-2.5">
+            <div role="status" className="mb-4 flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 dark:text-green-400 dark:bg-green-500/10 dark:border-green-500/20 rounded-md px-3 py-2.5">
               <CheckCircle className="w-3.5 h-3.5 shrink-0" aria-hidden />
               Password changed successfully.
             </div>
           )}
 
           {displayError && (
-            <div role="alert" className="mb-4 flex items-center gap-2 text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-md px-3 py-2.5">
+            <div role="alert" className="mb-4 flex items-center gap-2 text-xs text-red-700 bg-red-50 border border-red-200 dark:text-red-400 dark:bg-red-500/10 dark:border-red-500/20 rounded-md px-3 py-2.5">
               <AlertCircle className="w-3.5 h-3.5 shrink-0" aria-hidden />
               {displayError}
             </div>
@@ -152,7 +152,7 @@ export default function SettingsPage() {
             />
 
             <button type="submit" disabled={loading} aria-busy={loading}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 mt-1 rounded-md bg-accent text-[#0d1117] text-sm font-semibold hover:bg-[#009e80] transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+              className="w-full btn-primary py-2.5 mt-1 disabled:opacity-60 disabled:cursor-not-allowed">
               {loading && <Loader2 className="w-4 h-4 animate-spin" aria-hidden />}
               Update Password
             </button>
@@ -180,6 +180,61 @@ export default function SettingsPage() {
               </div>
             ))}
           </div>
+        </section>
+
+        {/* Grid Operations & Support Contact */}
+        <section aria-label="Support and dispatch hotline" className="card p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Shield className="w-4 h-4 text-accent" />
+            <h2 className="text-[10px] font-semibold uppercase tracking-wider text-ink-secondary">
+              Grid Operations & Dispatch Support
+            </h2>
+          </div>
+          <p className="text-xs text-ink-secondary mb-4">
+            Need urgent assistance or experiencing field telemetry discrepancies? Contact grid operations dispatch:
+          </p>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 rounded-lg bg-surface/40 border border-surface-border">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center text-accent">
+                  <Phone className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-ink-primary">Emergency Field Dispatch</p>
+                  <a href="tel:+18005550199" className="text-xs font-mono text-accent hover:underline">
+                    +1 (800) 555-0199
+                  </a>
+                </div>
+              </div>
+              <CopyButton text="+18005550199" label="Copy Phone" />
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-lg bg-surface/40 border border-surface-border">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center text-accent">
+                  <Mail className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-ink-primary">Engineering Desk</p>
+                  <a href="mailto:support@powerblind.local" className="text-xs font-mono text-accent hover:underline">
+                    support@powerblind.local
+                  </a>
+                </div>
+              </div>
+              <CopyButton text="support@powerblind.local" label="Copy Email" />
+            </div>
+          </div>
+        </section>
+
+        {/* Knowledge Base & Physics FAQ */}
+        <section aria-label="Frequently Asked Questions" className="card p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <HelpCircle className="w-4 h-4 text-accent" />
+            <h2 className="text-[10px] font-semibold uppercase tracking-wider text-ink-secondary">
+              Knowledge Base & Grid Physics FAQ
+            </h2>
+          </div>
+          <ExpandableFAQ />
         </section>
 
       </div>

@@ -5,21 +5,58 @@ export default {
   theme: {
     extend: {
       colors: {
-        canvas:  { DEFAULT: '#090d16', 50: '#0f172a', 100: '#141e33', 200: '#1c2942' },
-        surface: { DEFAULT: '#111827', card: '#131b2e', hover: '#19233c', border: '#1e2b44', borderLight: '#2a3b5c' },
-        accent:  { DEFAULT: '#00f2b2', hover: '#00d69d', dim: '#00b383', muted: 'rgba(0,242,178,0.12)', glow: 'rgba(0,242,178,0.30)' },
+        canvas: {
+          DEFAULT: 'rgb(var(--color-canvas-rgb) / <alpha-value>)',
+          50:      'rgb(var(--color-canvas-50-rgb) / <alpha-value>)',
+          100:     'rgb(var(--color-canvas-100-rgb) / <alpha-value>)',
+          200:     'rgb(var(--color-canvas-200-rgb) / <alpha-value>)',
+        },
+        surface: {
+          DEFAULT:     'rgb(var(--color-surface-rgb) / <alpha-value>)',
+          card:        'rgb(var(--color-card-bg-rgb) / <alpha-value>)',
+          hover:       'var(--color-surface-hover)',
+          border:      'var(--color-surface-border)',
+          borderLight: 'var(--color-surface-border-light)',
+        },
+        accent: {
+          DEFAULT: 'var(--color-accent)',
+          hover:   'var(--color-accent-hover)',
+          dim:     'var(--color-accent-dim)',
+          muted:   'var(--color-accent-muted)',
+          glow:    'var(--color-accent-glow)',
+        },
         risk: {
-          theft:   { DEFAULT: '#ff3b5c', hover: '#e62e4e', muted: 'rgba(255,59,92,0.15)',  glow: 'rgba(255,59,92,0.35)' },
-          fault:   { DEFAULT: '#f59e0b', hover: '#d97706', muted: 'rgba(245,158,11,0.15)', glow: 'rgba(245,158,11,0.35)' },
-          comm:    { DEFAULT: '#6366f1', hover: '#4f46e5', muted: 'rgba(99,102,241,0.15)', glow: 'rgba(99,102,241,0.35)' },
-          normal:  { DEFAULT: '#10b981', hover: '#059669', muted: 'rgba(16,185,129,0.15)', glow: 'rgba(16,185,129,0.35)' },
+          theft: {
+            DEFAULT: 'var(--color-risk-theft)',
+            hover:   'var(--color-risk-theft-hover)',
+            muted:   'var(--color-risk-theft-muted)',
+            glow:    'var(--color-risk-theft-glow)',
+          },
+          fault: {
+            DEFAULT: 'var(--color-risk-fault)',
+            hover:   'var(--color-risk-fault-hover)',
+            muted:   'var(--color-risk-fault-muted)',
+            glow:    'var(--color-risk-fault-glow)',
+          },
+          comm: {
+            DEFAULT: 'var(--color-risk-comm)',
+            hover:   'var(--color-risk-comm-hover)',
+            muted:   'var(--color-risk-comm-muted)',
+            glow:    'var(--color-risk-comm-glow)',
+          },
+          normal: {
+            DEFAULT: 'var(--color-risk-normal)',
+            hover:   'var(--color-risk-normal-hover)',
+            muted:   'var(--color-risk-normal-muted)',
+            glow:    'var(--color-risk-normal-glow)',
+          },
         },
         ink: {
-          primary:   '#f8fafc',
-          secondary: '#94a3b8',
-          muted:     '#64748b',
-          faint:     '#334155',
-          inverse:   '#090d16',
+          primary:   'var(--color-ink-primary)',
+          secondary: 'var(--color-ink-secondary)',
+          muted:     'var(--color-ink-muted)',
+          faint:     'var(--color-ink-faint)',
+          inverse:   'var(--color-ink-inverse)',
         },
       },
       fontFamily: {

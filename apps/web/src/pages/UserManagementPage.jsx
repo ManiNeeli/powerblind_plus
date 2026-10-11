@@ -70,7 +70,8 @@ export default function UserManagementPage() {
       <ErrorAlert message={error} className="mb-4" />
 
       <section aria-label="Users table" className="card overflow-hidden">
-        <table className="data-table" aria-label="User accounts">
+        <div className="overflow-x-auto table-responsive">
+          <table className="data-table" aria-label="User accounts">
           <thead>
             <tr>
               <th scope="col">Email</th>
@@ -141,6 +142,7 @@ export default function UserManagementPage() {
             }
           </tbody>
         </table>
+        </div>
       </section>
 
       {/* Create user modal */}
@@ -160,21 +162,21 @@ export default function UserManagementPage() {
           </FormField>
           <FormField label="Role" htmlFor={roleId}>
             <select id={roleId} value={form.role} onChange={e => setForm(f=>({...f,role:e.target.value}))}
-              className="w-full bg-canvas border border-surface-border rounded-md px-3 py-2 text-sm text-ink-secondary outline-none focus:border-accent/60 transition-colors">
+              className="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm text-ink-primary outline-none focus:border-accent transition-colors">
               <option value="OPERATOR">OPERATOR</option>
               <option value="ADMIN">ADMIN</option>
             </select>
           </FormField>
         </div>
-        <div className="flex gap-2 mt-5">
+        <div className="flex gap-2.5 mt-5">
           <button onClick={() => { setShowModal(false); setFormErr(''); }}
-            className="flex-1 px-4 py-2 rounded-md border border-surface-border text-sm text-ink-secondary hover:bg-surface transition-colors">
+            className="flex-1 px-4 py-2.5 rounded-lg border border-surface-border text-sm font-semibold text-ink-secondary hover:text-ink-primary hover:bg-surface transition-colors">
             Cancel
           </button>
           <button onClick={createUser} disabled={creating} aria-busy={creating}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md bg-accent text-[#0d1117] text-sm font-semibold hover:bg-[#009e80] transition-colors disabled:opacity-60">
+            className="flex-1 btn-primary py-2.5 text-sm disabled:opacity-60">
             {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
-            Create
+            Create User
           </button>
         </div>
       </Modal>

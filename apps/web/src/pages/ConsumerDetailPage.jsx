@@ -5,8 +5,9 @@ import { useConsumer, useTimeseries, usePredictions, usePredictionHistory } from
 import { useLogInspection } from '../hooks/useInspections';
 import { useMutation } from '../hooks/useApi';
 import { useToast } from '../contexts/ToastContext';
+import { usePageMeta } from '../hooks/usePageMeta';
 import { api } from '../lib/api';
-import { Badge, ErrorAlert, Skeleton } from '../components/ui/index.jsx';
+import { Badge, ErrorAlert, Skeleton, CopyButton } from '../components/ui/index.jsx';
 import XAIWaterfall    from '../components/charts/XAIWaterfall';
 import ConfidenceGauge from '../components/charts/ConfidenceGauge';
 import ClassProbBar    from '../components/charts/ClassProbBar';
@@ -21,9 +22,9 @@ import {
 
 const LABEL_HEX = { Theft:'#ff3b5c', FaultyMeter:'#f59e0b', CommFailure:'#6366f1', Normal:'#10b981' };
 const PRIORITY_STYLE = {
-  HIGH:   'bg-[#ff3b5c]/15 text-[#ff3b5c] border-[#ff3b5c]/30 shadow-[0_0_8px_rgba(255,59,92,0.2)]',
-  MEDIUM: 'bg-[#f59e0b]/15 text-[#f59e0b] border-[#f59e0b]/30 shadow-[0_0_8px_rgba(245,158,11,0.2)]',
-  LOW:    'bg-[#10b981]/15 text-[#10b981] border-[#10b981]/30 shadow-[0_0_8px_rgba(16,185,129,0.2)]',
+  HIGH:   'bg-red-50 text-red-700 border-red-200 dark:bg-[#ff3b5c]/15 dark:text-[#ff3b5c] dark:border-[#ff3b5c]/30 shadow-[0_0_8px_rgba(255,59,92,0.2)]',
+  MEDIUM: 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-[#f59e0b]/15 dark:text-[#f59e0b] dark:border-[#f59e0b]/30 shadow-[0_0_8px_rgba(245,158,11,0.2)]',
+  LOW:    'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-[#10b981]/15 dark:text-[#10b981] dark:border-[#10b981]/30 shadow-[0_0_8px_rgba(16,185,129,0.2)]',
 };
 
 function Section({ title, icon: Icon, children, action }) {
@@ -44,7 +45,7 @@ function Section({ title, icon: Icon, children, action }) {
 function ChartTip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="card-glass px-3.5 py-2.5 text-xs shadow-glass border border-white/10 min-w-[150px] rounded-lg">
+    <div className="card-glass px-3.5 py-2.5 text-xs shadow-glass border border-surface-border min-w-[150px] rounded-lg">
       <p className="text-ink-secondary mb-1.5 font-mono text-[11px]">{label}</p>
       {payload.map(p => (
         <div key={p.dataKey} className="flex items-center justify-between gap-3 mb-0.5">
@@ -66,6 +67,13 @@ export default function ConsumerDetailPage() {
   const { consumer, loading: loadingC, error: errorC } = useConsumer(id);
   const { readings, loading: loadingTS }               = useTimeseries(id);
   const { predictions, loading: loadingPreds, refetch: refetchPreds } = usePredictionHistory(id);
+
+  usePageMeta({
+    title: consumer ? `Consumer ${consumer.id}` : (id ? `Consumer ${id}` : 'Consumer Details'),
+    description: consumer
+      ? `Smart meter telemetry, electrical signatures, and theft detection forensics for consumer ${consumer.id}.`
+      : 'Smart meter telemetry analysis.',
+  });
 
   const { mutate: predictMutate, loading: predicting } = useMutation();
   const { logInspection, loading: inspecting }         = useLogInspection();
@@ -133,16 +141,18 @@ export default function ConsumerDetailPage() {
   const displayPred = activePred ?? consumer.latestPrediction;
 
   return (
-    <div className="flex flex-col min-h-full">
+    <div className="flex flex-col min-h-full overflow-x-hidden max-w-full">
       {/* Header */}
       <header className="px-6 pt-6 pb-5 border-b border-surface-border flex items-start gap-4 flex-wrap bg-surface/10 backdrop-blur-md">
         <button onClick={() => navigate(-1)}
+          aria-label="Go back to consumers list"
           className="mt-0.5 text-ink-secondary hover:text-ink-primary transition-colors p-1.5 -ml-1 rounded-md hover:bg-surface border border-transparent hover:border-surface-border">
           <ChevronLeft className="w-4 h-4" />
         </button>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2.5 flex-wrap mb-0.5">
             <h1 className="font-mono font-bold text-base text-ink-primary tracking-tight">{consumer.id}</h1>
+            <CopyButton text={consumer.id} label={`Copy ${consumer.id}`} />
             <Badge label={consumer.groundTruthLabel} />
             {consumer.groundTruthSubtype && (
               <span className="text-[10px] font-mono text-ink-muted bg-surface px-1.5 py-0.5 rounded border border-surface-border">
@@ -156,7 +166,7 @@ export default function ConsumerDetailPage() {
           </p>
         </div>
         <button onClick={runPrediction} disabled={predicting || scanProgress > 0}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-accent to-[#00d69d] text-canvas font-semibold text-sm shadow-glow-accent hover:brightness-105 active:scale-[0.98] transition-all disabled:opacity-50">
+          className="btn-primary flex items-center gap-2 px-4 py-2 text-sm disabled:opacity-50">
           {(predicting || scanProgress > 0) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
           {(predicting || scanProgress > 0) ? 'Executing Neural Physics Scan…' : 'Run Prediction'}
         </button>
@@ -224,7 +234,7 @@ export default function ConsumerDetailPage() {
               <>
                 <ResponsiveContainer width="100%" height={260}>
                   <ComposedChart data={readings} margin={{ top:6, right:8, left:-20, bottom:0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.05)" vertical={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-chart-grid)" vertical={false} />
                     <XAxis dataKey="date" tick={{ fill:'var(--color-ink-muted)', fontSize:10 }} tickLine={false} axisLine={false}
                       interval={Math.floor(readings.length / 8)} tickFormatter={d => d?.slice(5)} />
                     <YAxis yAxisId="kwh" tick={{ fill:'var(--color-ink-muted)', fontSize:10 }} tickLine={false} axisLine={false} />
@@ -363,9 +373,9 @@ export default function ConsumerDetailPage() {
           {inspectionDone
             ? (
               <div className={cn('flex items-center gap-2.5 rounded-xl px-4 py-3 text-sm font-semibold border backdrop-blur-sm',
-                inspectionDone === 'CONFIRMED'      && 'bg-[#ff3b5c]/15 text-[#ff3b5c] border-[#ff3b5c]/30 shadow-glow-theft',
-                inspectionDone === 'FALSE_POSITIVE' && 'bg-[#10b981]/15 text-[#10b981] border-[#10b981]/30 shadow-glow-normal',
-                inspectionDone === 'QUEUED'         && 'bg-[#6366f1]/15 text-[#6366f1] border-[#6366f1]/30 shadow-glow-comm',
+                inspectionDone === 'CONFIRMED'      && 'bg-red-50 text-red-700 border-red-200 dark:bg-[#ff3b5c]/15 dark:text-[#ff3b5c] dark:border-[#ff3b5c]/30 shadow-glow-theft',
+                inspectionDone === 'FALSE_POSITIVE' && 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-[#10b981]/15 dark:text-[#10b981] dark:border-[#10b981]/30 shadow-glow-normal',
+                inspectionDone === 'QUEUED'         && 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-[#6366f1]/15 dark:text-[#6366f1] dark:border-[#6366f1]/30 shadow-glow-comm',
               )}>
                 <span className="w-2 h-2 rounded-full bg-current animate-pulse" />
                 <span>Decision verified & logged: {inspectionDone.replace('_', ' ')}</span>
@@ -374,9 +384,9 @@ export default function ConsumerDetailPage() {
             : (
               <div className="flex flex-wrap gap-2.5">
                 {[
-                  { status:'QUEUED',         label:'Queue for Field Inspection', cls:'border-[#6366f1]/30 text-[#818cf8] bg-[#6366f1]/10 hover:bg-[#6366f1]/20 hover:border-[#6366f1]/50' },
-                  { status:'CONFIRMED',      label:'Confirm Energy Theft',       cls:'border-[#ff3b5c]/30 text-[#ff4d6d] bg-[#ff3b5c]/10 hover:bg-[#ff3b5c]/20 hover:border-[#ff3b5c]/50' },
-                  { status:'FALSE_POSITIVE', label:'Mark False Alarm',           cls:'border-[#10b981]/30 text-[#34d399] bg-[#10b981]/10 hover:bg-[#10b981]/20 hover:border-[#10b981]/50' },
+                  { status:'QUEUED',         label:'Queue for Field Inspection', cls:'border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 dark:border-[#6366f1]/30 dark:text-[#818cf8] dark:bg-[#6366f1]/10 dark:hover:bg-[#6366f1]/20' },
+                  { status:'CONFIRMED',      label:'Confirm Energy Theft',       cls:'border-red-200 text-red-700 bg-red-50 hover:bg-red-100 dark:border-[#ff3b5c]/30 dark:text-[#ff4d6d] dark:bg-[#ff3b5c]/10 dark:hover:bg-[#ff3b5c]/20' },
+                  { status:'FALSE_POSITIVE', label:'Mark False Alarm',           cls:'border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:border-[#10b981]/30 dark:text-[#34d399] dark:bg-[#10b981]/10 dark:hover:bg-[#10b981]/20' },
                 ].map(({ status, label, cls }) => (
                   <button key={status} onClick={() => handleInspection(status)} disabled={inspecting}
                     className={cn('flex items-center gap-2 px-3.5 py-2 rounded-lg border text-xs font-semibold transition-all duration-150 active:scale-[0.98] disabled:opacity-50', cls)}>

@@ -1,3 +1,5 @@
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 require('dotenv').config();
 const express      = require('express');
 const helmet       = require('helmet');
@@ -12,15 +14,61 @@ const { apiLimiter }             = require('./middleware/rateLimiter');
 
 const app = express();
 
-app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
+// Disable Express fingerprinting header (Debug/Info Leak prevention)
+app.disable('x-powered-by');
 
-const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:5173').split(',').map(o=>o.trim());
+// Enterprise Security Headers via Helmet
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "blob:"],
+      connectSrc: ["'self'", "http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:4000", "http://127.0.0.1:4000", "http://localhost:8000", "http://127.0.0.1:8000"],
+      fontSrc: ["'self'", "data:"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  dnsPrefetchControl: { allow: false },
+  frameguard: { action: 'deny' },
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true,
+  },
+  ieNoOpen: true,
+  noSniff: true,
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  xssFilter: true,
+}));
+
+// Strict CORS Configuration
+const defaultOrigins = ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:4000', 'http://127.0.0.1:4000'];
+const envOrigins = (process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map(o => o.trim())
+  .filter(Boolean);
+const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
+
 app.use(cors({
-  origin: (origin, cb) => (!origin || allowedOrigins.includes(origin) ? cb(null,true) : cb(new Error(`CORS: ${origin}`))),
+  origin: (origin, cb) => {
+    // Allow non-browser requests (Postman, curl, internal ping) or approved browser origins
+    if (!origin || allowedOrigins.includes(origin)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`CORS: Origin ${origin} not permitted`));
+    }
+  },
   credentials: true,
-  methods: ['GET','POST','PATCH','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization','X-Request-Id'],
-  exposedHeaders: ['X-Request-Id','Content-Disposition'],
+  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],
+  exposedHeaders: ['X-Request-Id', 'Content-Disposition'],
+  maxAge: 86400, // 24-hour preflight cache
 }));
 
 app.use(express.json({ limit: '512kb' }));
