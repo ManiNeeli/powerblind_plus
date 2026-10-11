@@ -25,7 +25,7 @@ app.use(helmet({
       scriptSrc: ["'self'", "'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "blob:"],
-      connectSrc: ["'self'", "http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:4000", "http://127.0.0.1:4000", "http://localhost:8000", "http://127.0.0.1:8000"],
+      connectSrc: ["'self'", "http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:4000", "http://127.0.0.1:4000", "http://localhost:8000", "http://127.0.0.1:8000", "https://*.vercel.app"],
       fontSrc: ["'self'", "data:"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
@@ -57,8 +57,9 @@ const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
 
 app.use(cors({
   origin: (origin, cb) => {
-    // Allow non-browser requests (Postman, curl, internal ping) or approved browser origins
-    if (!origin || allowedOrigins.includes(origin)) {
+    // Allow non-browser requests (Postman, curl, internal ping), approved origins, or Vercel deployments
+    const isVercelDomain = origin && /^https:\/\/[a-z0-9-]+(\.[a-z0-9-]+)*\.vercel\.app$/i.test(origin);
+    if (!origin || allowedOrigins.includes(origin) || isVercelDomain) {
       cb(null, true);
     } else {
       cb(new Error(`CORS: Origin ${origin} not permitted`));

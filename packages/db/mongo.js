@@ -18,8 +18,8 @@ async function connectMongo() {
   if (db) return { client, db };
 
   client = new MongoClient(MONGODB_URI, {
-    maxPoolSize: 20,
-    minPoolSize: 2,
+    maxPoolSize: process.env.VERCEL ? 10 : 20,
+    minPoolSize: process.env.VERCEL ? 0 : 2,
     serverSelectionTimeoutMS: 5000,
     connectTimeoutMS: 10000,
   });
