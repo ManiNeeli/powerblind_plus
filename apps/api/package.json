@@ -4,6 +4,7 @@
   "private": true,
   "main": "src/index.js",
   "scripts": {
+    "build": "echo 'api ready'",
     "dev":   "nodemon src/index.js",
     "start": "node src/index.js",
     "test":  "vitest run --globals --reporter=verbose",

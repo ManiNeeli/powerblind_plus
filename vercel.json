@@ -4,6 +4,7 @@
     "api": {
       "root": "apps/api",
       "framework": "express",
+      "entrypoint": "src/index.js",
       "bindings": [
         {
           "type": "service",
@@ -19,7 +20,8 @@
     },
     "ml": {
       "root": "services/ml",
-      "framework": "fastapi"
+      "framework": "fastapi",
+      "entrypoint": "main:app"
     }
   },
   "rewrites": [
