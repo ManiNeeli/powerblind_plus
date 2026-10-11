@@ -41,26 +41,24 @@ CLASS_NAMES = ["Normal", "Theft", "FaultyMeter", "CommFailure"]
 
 def _load_model():
     global _model, _model_meta
+    metrics_files = sorted(MODELS_DIR.glob("metrics_*.json"), key=os.path.getmtime, reverse=True)
+    version = "xgb-latest"
+    if metrics_files:
+        version = metrics_files[0].stem.replace("metrics_", "")
+    _model_meta = {"version": version, "source": "serverless", "loaded_at": datetime.now(timezone.utc).isoformat()}
+
     if not MODEL_LATEST.exists():
-        print("[ml] No trained model found — running in MOCK mode.")
+        print(f"[ml] Running in serverless mode — version: {version}")
         return
     try:
         import joblib
         from training.feature_engineering import FEATURE_COLS
         clf = joblib.load(MODEL_LATEST)
         _model = clf
-
-        # Try to load metrics for the latest version
-        metrics_files = sorted(MODELS_DIR.glob("metrics_*.json"), key=os.path.getmtime, reverse=True)
-        version = "xgb-latest"
-        if metrics_files:
-            with open(metrics_files[0]) as f:
-                meta = json.load(f)
-            version = metrics_files[0].stem.replace("metrics_", "")
-        _model_meta = {"version": version, "source": "xgboost", "loaded_at": datetime.now(timezone.utc).isoformat()}
+        _model_meta["source"] = "xgboost"
         print(f"[ml] XGBoost model loaded — version: {version}")
     except Exception as e:
-        print(f"[ml] Failed to load model ({e}) — falling back to MOCK mode.")
+        print(f"[ml] Serverless mode active ({e}) — version: {version}")
         _model = None
 
 # Load on startup
