@@ -30,7 +30,7 @@ This guide walks you through running **PowerBlind+** in [Google Colab](https://c
    - Click **Runtime** → **Change runtime type** → select **T4 GPU** → click **Save**.
 6. Click **Runtime** → **Run all** (`Ctrl + F9`).
    - The notebook **automatically detects and unzips `powerblind-plus.zip`**!
-   - It automatically loads the dataset (from `data/` or `PowerBlind_Plus_Dataset/`), engineers 26 features, trains the multi-class XGBoost model with SMOTE & 5-fold CV, renders confusion matrices & SHAP waterfall charts, and automatically triggers the download of `powerblind_models.zip`!
+   - It automatically loads the dataset from `data/`, engineers 26 features, trains the multi-class XGBoost model with SMOTE & 5-fold CV, renders confusion matrices & SHAP waterfall charts, and automatically triggers the download of `powerblind_models.zip`!
 
 ---
 

@@ -21,9 +21,9 @@ PowerBlind+ is a full-stack AI application that detects electricity theft, fault
     │   Rate limiting      │         └─────────────────────┘
     │   Audit logging      │
     └───────────┬──────────┘
-                │ Prisma ORM
+                │ Prisma ORM / MongoDB Native Driver
     ┌───────────▼──────────┐
-    │  SQLite / PostgreSQL │
+    │  MongoDB / SQLite    │
     │  5 000 consumers     │
     │  1.8M readings       │
     └──────────────────────┘
@@ -147,8 +147,8 @@ powerblind-plus/
 │   │   │   │                     audit-log, users, model, export, health
 │   │   │   ├── middleware/     # auth (JWT), rateLimiter, sanitize,
 │   │   │   │                     requestContext, errorHandler
-│   │   │   └── lib/            # jwt, password, validate (Zod), audit
-│   │   ├── tests/              # integration tests (vitest + supertest)
+│   │   │   └── lib/            # jwt, password, validate (Zod), audit, physicsEngine
+│   │   ├── tests/              # QA test suites (white-box, black-box, integration)
 │   │   └── Dockerfile
 │   │
 │   └── web/                    # React + Vite + Tailwind frontend
@@ -158,20 +158,22 @@ powerblind-plus/
 │       │   │                     ModelHealth, Settings, Login, NotFound
 │       │   ├── components/
 │       │   │   ├── charts/     # XAIWaterfall, ConfidenceGauge, ClassProbBar,
-│       │   │   │                 PredictionHistory, GlobalSHAP
+│       │   │   │                 PredictionHistory, GlobalSHAP, TheftForensicFlow, TheftTypeMatrix
 │       │   │   ├── layout/     # AppLayout, PageShell
 │       │   │   └── ui/         # Badge, Skeleton, Modal, StatCard, Button,
 │       │   │                     EmptyState, ErrorAlert, Pagination,
 │       │   │                     ExportButton, CommandPalette, ErrorBoundary
 │       │   ├── contexts/       # AuthContext, ToastContext, ThemeContext
-│       │   └── hooks/          # useApi, useMutation, useDashboard,
-│       │                         useConsumers, useInspections, usePrediction,
-│       │                         useUsers, useAuditLog
+│       │   └── hooks/          # useApi, useConsumers, useDashboard,
+│       │                         useInspections, usePrediction, useUsers, useAuditLog
 │       └── Dockerfile
 │
 ├── packages/
-│   └── db/                     # Prisma schema + seed script
-│       └── prisma/schema.prisma
+│   └── db/                     # Dual MongoDB & Prisma SQLite/PostgreSQL adapter
+│       ├── index.js            # Prisma client factory
+│       ├── mongo.js            # Native MongoDB client & query engine
+│       ├── prisma/schema.prisma
+│       └── seed/               # seed.js (Prisma) & seed_mongo.js (MongoDB)
 │
 ├── services/
 │   └── ml/                     # Python FastAPI ML microservice
@@ -302,18 +304,22 @@ python -m training.train --n_splits 5   # 5–15 min
 ## Tests
 
 ```bash
-# Run all API integration tests
+# Run all API tests (Unit, Integration, White-Box & Black-Box QA)
 npm test -w apps/api
 
-# Watch mode
-npm run test:watch -w apps/api
+# Run web frontend tests
+npm run test:web -w apps/web
 ```
 
-**56 integration tests** across 4 test files:
-- `auth.test.js` — login, refresh, lockout, change-password (18 tests)
-- `consumers.test.js` — list, filter, timeseries, predict, dashboard (10 tests)
-- `phase3.test.js` — batch-predict, CSV exports, inspection CRUD (12 tests)
-- `phase4.test.js` — model versioning, RBAC, retrain, SHAP, audit trail (8+ tests)
+**147 automated tests** across 7 test suites (100% passing):
+- `whitebox_unit.test.js` (50 tests) — McCabe Basis Path Testing (13 cyclomatic paths), Control Structure condition & loop boundary testing, Unit testing for security, physics & math.
+- `blackbox_state.test.js` (32 tests) — Equivalence Partitioning, Boundary Value Analysis, State Transition Testing (Inspection, Lockout, Model Activation FSMs), Graph-Based Data Flow & Lineage.
+- `auth.test.js` (19 tests) — Login, refresh, brute-force lockout, change-password, and session management.
+- `consumers.test.js` (10 tests) — Search, filter, 365-day timeseries, prediction pipeline, and dashboard metrics.
+- `phase3.test.js` (12 tests) — Batch prediction queue, CSV streaming exports, and inspection CRUD.
+- `phase4.test.js` (13 tests) — Model versioning, RBAC authorization, retrain trigger, SHAP explanations, and audit logs.
+- `phase5_6.test.js` (11 tests) — End-to-end integration, error boundary handling, and rate limiting.
+- `App.test.jsx` (1 test) — React application rendering, theme provider, and route navigation.
 
 ---
 
