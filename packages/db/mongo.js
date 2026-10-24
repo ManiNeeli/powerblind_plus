@@ -559,7 +559,7 @@ function createMongoAdapter() {
         }
         if (include?.operator) {
           const u = await database.collection('users').findOne({ id: res.operatorId });
-          res.operator = u ? { email: u.email, role: u.role } : null;
+          res.operator = u ? { id: u.id, email: u.email, role: u.role } : null;
         }
         return res;
       },

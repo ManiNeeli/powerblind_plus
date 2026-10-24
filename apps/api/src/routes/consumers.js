@@ -8,6 +8,11 @@ const { validate, consumerListSchema } = require('../lib/validate');
 const router = express.Router();
 router.use(requireAuth);
 
+const safeJsonParse = (str, fallback = []) => {
+  if (typeof str !== 'string') return str || fallback;
+  try { return JSON.parse(str); } catch { return fallback; }
+};
+
 // GET /api/consumers
 router.get('/', validate(consumerListSchema, 'query'), async (req, res, next) => {
   const { page, limit, label, consumerType, search } = req.validatedQuery;
@@ -60,7 +65,7 @@ router.get('/:id', async (req, res, next) => {
     if (!consumer) return next(new AppError(`Consumer ${req.params.id} not found.`, 404, 'NOT_FOUND'));
 
     const latestPrediction = consumer.predictions[0]
-      ? { ...consumer.predictions[0], topFeatures: JSON.parse(consumer.predictions[0].topFeatures) }
+      ? { ...consumer.predictions[0], topFeatures: safeJsonParse(consumer.predictions[0].topFeatures) }
       : null;
 
     res.json({ ...consumer, predictions: undefined, latestPrediction, readingCount: consumer._count.readings, _count: undefined });
@@ -109,7 +114,7 @@ router.get('/:id/predictions', async (req, res, next) => {
     const preds  = await prisma.prediction.findMany({
       where: { consumerId: req.params.id }, orderBy: { createdAt: 'desc' }, take: limit,
     });
-    res.json({ predictions: preds.map(p => ({ ...p, topFeatures: JSON.parse(p.topFeatures) })) });
+    res.json({ predictions: preds.map(p => ({ ...p, topFeatures: safeJsonParse(p.topFeatures) })) });
   } catch (err) { next(err); }
 });
 
@@ -215,7 +220,7 @@ router.get('/:id/predict', predictLimiter, async (req, res, next) => {
 
     res.json({
       ...saved,
-      topFeatures:         JSON.parse(saved.topFeatures),
+      topFeatures:         safeJsonParse(saved.topFeatures),
       classProbabilities:  prediction.class_probabilities ?? null,
       actionPriority:      prediction.action_priority     ?? null,
       physicsProof:        prediction.physics_proof       ?? null,

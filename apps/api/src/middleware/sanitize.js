@@ -25,17 +25,17 @@ function sanitizeString(str) {
   // 1. Remove null bytes and carriage-return / terminal escapes
   let clean = str.replace(/\0/g, '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
 
-  // 2. Strip explicit script blocks
-  clean = clean.replace(SCRIPT_REGEX, '');
-
-  // 3. Strip dangerous embedding tags
-  clean = clean.replace(DANGEROUS_TAGS_REGEX, '');
-
-  // 4. Strip inline event handlers (onerror, onload, onclick, etc.)
-  clean = clean.replace(EVENT_HANDLER_REGEX, '');
-
-  // 5. Strip javascript: pseudo-protocols
-  clean = clean.replace(JS_PROTOCOL_REGEX, '');
+  // 2. Iteratively strip script blocks, dangerous tags, handlers, and pseudo-protocols
+  let prev;
+  let iterations = 0;
+  do {
+    prev = clean;
+    clean = clean.replace(SCRIPT_REGEX, '')
+                 .replace(DANGEROUS_TAGS_REGEX, '')
+                 .replace(EVENT_HANDLER_REGEX, '')
+                 .replace(JS_PROTOCOL_REGEX, '');
+    iterations++;
+  } while (clean !== prev && iterations < 5);
 
   return clean.trim();
 }

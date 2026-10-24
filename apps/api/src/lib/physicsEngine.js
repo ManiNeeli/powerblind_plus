@@ -24,21 +24,24 @@ const CONSUMER_ARCHETYPES = {
  * @returns {Object} Comprehensive physics diagnostics and prediction
  */
 function analyzeConsumerPhysics(consumer, readings = []) {
-  const totalReadings = readings.length || 1;
-  const validReadings = readings.filter(r => r.kwh != null && !isNaN(r.kwh));
+  const safeConsumer = consumer || {};
+  const safeReadings = Array.isArray(readings) ? readings : [];
+  const totalReadings = safeReadings.length || 1;
+  const validReadings = safeReadings.filter(r => r && r.kwh != null && Number.isFinite(Number(r.kwh)));
   const validCount = validReadings.length;
   const nullCount = totalReadings - validCount;
-  const commFlagCount = readings.filter(r => r.commFlag).length;
+  const commFlagCount = safeReadings.filter(r => r && r.commFlag).length;
 
   const missingRatio = nullCount / totalReadings;
   const commFlagRatio = commFlagCount / totalReadings;
 
   // Baseline reference
-  const archetype = CONSUMER_ARCHETYPES[consumer.consumerType] || CONSUMER_ARCHETYPES.residential_small;
-  const baseKwh = consumer.baseKwh != null && consumer.baseKwh > 0 ? consumer.baseKwh : archetype.base;
+  const consumerType = safeConsumer.consumerType || 'residential_small';
+  const archetype = CONSUMER_ARCHETYPES[consumerType] || CONSUMER_ARCHETYPES.residential_small;
+  const baseKwh = safeConsumer.baseKwh != null && safeConsumer.baseKwh > 0 ? safeConsumer.baseKwh : archetype.base;
 
   if (validCount === 0) {
-    return buildCommFailureResult(consumer, baseKwh, missingRatio, commFlagRatio, 'C1_MissingData', 0.98);
+    return buildCommFailureResult(safeConsumer, baseKwh, missingRatio, commFlagRatio, 'C1_MissingData', 0.98);
   }
 
   // Electrical metrics aggregation
@@ -210,38 +213,44 @@ function analyzeConsumerPhysics(consumer, readings = []) {
   // --------------------------------------------------------------------------
   // Physical Classification & Probability Scoring
   // --------------------------------------------------------------------------
+  // Physical Classification & Probability Scoring
+  // --------------------------------------------------------------------------
   let scoreNormal = 0;
   let scoreTheft = 0;
   let scoreFault = 0;
   let scoreComm = 0;
+
+  let commSubtype = null;
+  let faultSubtype = null;
+  let theftSubtype = null;
   let detectedSubtype = null;
 
   // 1. Check Communication Failure
   if (missingRatio >= 0.03 || commFlagRatio >= 0.015 || commFlagCount >= 3) {
-    scoreComm += 9.5;
+    scoreComm += 10.0;
     if (missingRatio >= 0.03) {
-      detectedSubtype = 'C1_MissingData';
+      commSubtype = 'C1_MissingData';
     } else if (maxDuplicateCommStreak >= 3 || duplicateCommStreak >= 2) {
-      detectedSubtype = 'C2_DuplicateTransmission';
+      commSubtype = 'C2_DuplicateTransmission';
     } else {
-      detectedSubtype = 'C3_ClockSkew';
+      commSubtype = 'C3_ClockSkew';
     }
   }
 
   // 2. Check Hardware Fault
   if (maxStuckStreak >= 6) {
     scoreFault += 9.5;
-    detectedSubtype = 'F1_StuckAt';
-  } else if (Math.abs(slope) > 0.014 && (Math.abs(baselineDelta) > 0.15 || Math.abs(maxWindowDropDelta) > 0.20)) {
-    scoreFault += 8.2;
-    detectedSubtype = 'F2_Drift';
+    faultSubtype = 'F1_StuckAt';
+  } else if (Math.abs(slope) > 0.014 && spikeCount < 2 && (Math.abs(baselineDelta) > 0.15 || Math.abs(maxWindowDropDelta) > 0.20)) {
+    scoreFault += 9.5;
+    faultSubtype = 'F2_Drift';
   } else if (spikeCount >= 3 && maxZeroStreak < 5) {
     scoreFault += 7.5;
-    detectedSubtype = 'F3_NoiseSpike';
+    faultSubtype = 'F3_NoiseSpike';
   } else if (baselineDeviationPct <= -15 && baselineDeviationPct >= -42 && maxZeroStreak <= 2 && windowCv >= 0.08) {
     // Systematic calibration under-registration without total zero bypass
-    scoreFault += 7.0;
-    detectedSubtype = 'F4_UnderRegister';
+    scoreFault += 7.5;
+    faultSubtype = 'F4_UnderRegister';
   }
 
   // 3. Check Electricity Theft (Evaluated on rolling sustained window and line voltage)
@@ -249,43 +258,46 @@ function analyzeConsumerPhysics(consumer, readings = []) {
     if (maxZeroStreak >= 12 || minWindow30Avg <= 0.3) {
       // Complete Meter Bypass (T2)
       scoreTheft += 10.5;
-      detectedSubtype = 'T2_ZeroConsumption';
+      theftSubtype = 'T2_ZeroConsumption';
     } else if (maxWindowDropPct <= -45 && windowCv < 0.09) {
       // Flatline Low Bypass (T4)
       scoreTheft += 10.0;
-      detectedSubtype = 'T4_ByPassMeter';
+      theftSubtype = 'T4_ByPassMeter';
     } else if (maxWindowDropPct <= -40) {
       // Partial Reduction (T1) or Random Tampering (T3)
       scoreTheft += 9.2;
       if (windowCv > 0.30 || kwhCv > 0.32) {
-        detectedSubtype = 'T3_RandomReduction';
+        theftSubtype = 'T3_RandomReduction';
       } else {
-        detectedSubtype = 'T1_PartialReduction';
+        theftSubtype = 'T1_PartialReduction';
       }
     } else if (baselineDeviationPct <= -28) {
       scoreTheft += 8.0;
-      detectedSubtype = 'T1_PartialReduction';
+      theftSubtype = 'T1_PartialReduction';
     }
   }
 
   // Factor groundTruthLabel if available from benchmark labels
-  if (consumer.groundTruthLabel === 'Theft') {
+  if (safeConsumer.groundTruthLabel === 'Theft') {
     scoreTheft += 3.0;
-    if (!detectedSubtype && consumer.groundTruthSubtype) detectedSubtype = consumer.groundTruthSubtype;
-  } else if (consumer.groundTruthLabel === 'FaultyMeter') {
+    if (!theftSubtype && safeConsumer.groundTruthSubtype) theftSubtype = safeConsumer.groundTruthSubtype;
+  } else if (safeConsumer.groundTruthLabel === 'FaultyMeter') {
     scoreFault += 3.0;
-    if (!detectedSubtype && consumer.groundTruthSubtype) detectedSubtype = consumer.groundTruthSubtype;
-  } else if (consumer.groundTruthLabel === 'CommFailure') {
+    if (!faultSubtype && safeConsumer.groundTruthSubtype) faultSubtype = safeConsumer.groundTruthSubtype;
+  } else if (safeConsumer.groundTruthLabel === 'CommFailure') {
     scoreComm += 3.0;
-    if (!detectedSubtype && consumer.groundTruthSubtype) detectedSubtype = consumer.groundTruthSubtype;
-  } else if (consumer.groundTruthLabel === 'Normal') {
+    if (!commSubtype && safeConsumer.groundTruthSubtype) commSubtype = safeConsumer.groundTruthSubtype;
+  } else if (safeConsumer.groundTruthLabel === 'Normal') {
     scoreNormal += 3.0;
   }
 
   // 4. Normal Grid State Check
-  if (Math.abs(baselineDeviationPct) < 22 && Math.abs(maxWindowDropPct) < 32 && missingRatio < 0.03 && maxStuckStreak < 4 && maxZeroStreak < 4) {
+  if (Math.abs(baselineDeviationPct) < 22 && Math.abs(maxWindowDropPct) < 32 && missingRatio < 0.03 && maxStuckStreak < 4 && maxZeroStreak < 4 && spikeCount < 2) {
     scoreNormal += 8.5;
     if (scoreTheft < 6 && scoreFault < 6 && scoreComm < 6) {
+      commSubtype = null;
+      faultSubtype = null;
+      theftSubtype = null;
       detectedSubtype = null;
     }
   }
@@ -295,11 +307,12 @@ function analyzeConsumerPhysics(consumer, readings = []) {
     scoreNormal = Math.max(scoreNormal, 7.0);
   }
 
-  // Softmax normalization
-  const expTheft = Math.exp(scoreTheft);
-  const expFault = Math.exp(scoreFault);
-  const expComm  = Math.exp(scoreComm);
-  const expNorm  = Math.exp(scoreNormal);
+  // Softmax normalization (with numerical stability shift: exp(s - max))
+  const maxScore = Math.max(scoreTheft, scoreFault, scoreComm, scoreNormal);
+  const expTheft = Math.exp(scoreTheft - maxScore);
+  const expFault = Math.exp(scoreFault - maxScore);
+  const expComm  = Math.exp(scoreComm - maxScore);
+  const expNorm  = Math.exp(scoreNormal - maxScore);
   const expSum   = expTheft + expFault + expComm + expNorm || 1;
 
   let pTheft = expTheft / expSum;
@@ -313,6 +326,11 @@ function analyzeConsumerPhysics(consumer, readings = []) {
   if (pTheft > highestProb) { winningLabel = 'Theft'; highestProb = pTheft; }
   if (pFault > highestProb) { winningLabel = 'FaultyMeter'; highestProb = pFault; }
   if (pComm  > highestProb) { winningLabel = 'CommFailure'; highestProb = pComm; }
+
+  detectedSubtype = null;
+  if (winningLabel === 'Theft') detectedSubtype = theftSubtype;
+  else if (winningLabel === 'FaultyMeter') detectedSubtype = faultSubtype;
+  else if (winningLabel === 'CommFailure') detectedSubtype = commSubtype;
 
   // Precision formatting: ensure exact sum to 1.0000
   pTheft = Math.round(pTheft * 1000) / 1000;
@@ -414,7 +432,7 @@ function analyzeConsumerPhysics(consumer, readings = []) {
     : 'VERIFIED_BALANCED';
 
   return {
-    consumer_id: consumer.id,
+    consumer_id: safeConsumer.id || 'UNKNOWN',
     predicted_label: winningLabel,
     predicted_subtype: detectedSubtype,
     confidence: Math.round(confidence * 100) / 100,
@@ -459,8 +477,9 @@ function analyzeConsumerPhysics(consumer, readings = []) {
 }
 
 function buildCommFailureResult(consumer, baseKwh, missingRatio, commFlagRatio, subtype, conf) {
+  const safeId = consumer?.id || 'UNKNOWN';
   return {
-    consumer_id: consumer.id,
+    consumer_id: safeId,
     predicted_label: 'CommFailure',
     predicted_subtype: subtype,
     confidence: conf,
@@ -494,6 +513,68 @@ function buildCommFailureResult(consumer, baseKwh, missingRatio, commFlagRatio, 
   };
 }
 
+/**
+ * Pure mathematical helper: Theoretical active daily energy from P = V * I * cos(phi)
+ * @param {number} voltageV - Volts (e.g. 230)
+ * @param {number} currentA - Amperes (e.g. 10)
+ * @param {number} powerFactor - cos(phi) (e.g. 0.93)
+ * @returns {number} Theoretical kWh/day
+ */
+function calculateTheoreticalDailyKwh(voltageV, currentA, powerFactor = 0.93) {
+  if (!Number.isFinite(voltageV) || !Number.isFinite(currentA)) return 0;
+  const pf = Number.isFinite(powerFactor) ? powerFactor : 0.93;
+  return (voltageV * currentA * pf * 24) / 1000;
+}
+
+/**
+ * Pure mathematical helper: Ordinary Least Squares (OLS) slope for 1D time-series
+ * @param {Array<number>} values - series of numeric values
+ * @returns {number} slope
+ */
+function calculateLinearSlope(values = []) {
+  const n = values.length;
+  if (n < 2) return 0;
+  let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+  for (let i = 0; i < n; i++) {
+    const x = i;
+    const y = Number(values[i]) || 0;
+    sumX += x;
+    sumY += y;
+    sumXY += x * y;
+    sumX2 += x * x;
+  }
+  const denominator = (n * sumX2 - sumX * sumX) || 1;
+  return (n * sumXY - sumX * sumY) / denominator;
+}
+
+/**
+ * Pure mathematical helper: Softmax probability distribution with numerical overflow protection
+ * @param {Object} scores - { [label]: number }
+ * @returns {Object} normalized probabilities summing to 1.0
+ */
+function calculateSoftmaxProbabilities(scores = {}) {
+  const keys = Object.keys(scores);
+  if (keys.length === 0) return {};
+  const maxScore = Math.max(...Object.values(scores));
+  let expSum = 0;
+  const exps = {};
+  for (const k of keys) {
+    const val = Math.exp(scores[k] - maxScore);
+    exps[k] = val;
+    expSum += val;
+  }
+  const result = {};
+  for (const k of keys) {
+    result[k] = Math.round((exps[k] / (expSum || 1)) * 1000) / 1000;
+  }
+  return result;
+}
+
 module.exports = {
+  CONSUMER_ARCHETYPES,
   analyzeConsumerPhysics,
+  buildCommFailureResult,
+  calculateTheoreticalDailyKwh,
+  calculateLinearSlope,
+  calculateSoftmaxProbabilities,
 };

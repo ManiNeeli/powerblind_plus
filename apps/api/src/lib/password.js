@@ -15,7 +15,13 @@ const COMMON_PASSWORDS = new Set([
  * Enforces password policy. Returns an error string or null if valid.
  */
 function validatePassword(password) {
-  if (!password || password.length < MIN_LENGTH) {
+  if (!password) {
+    return 'Password is required.';
+  }
+  if (COMMON_PASSWORDS.has(password.toLowerCase())) {
+    return 'That password is too common. Please choose a stronger password.';
+  }
+  if (password.length < MIN_LENGTH) {
     return `Password must be at least ${MIN_LENGTH} characters long.`;
   }
   if (!/[A-Z]/.test(password)) {
@@ -26,9 +32,6 @@ function validatePassword(password) {
   }
   if (!/[^A-Za-z0-9]/.test(password)) {
     return 'Password must contain at least one special character.';
-  }
-  if (COMMON_PASSWORDS.has(password.toLowerCase())) {
-    return 'That password is too common. Please choose a stronger password.';
   }
   return null;
 }
